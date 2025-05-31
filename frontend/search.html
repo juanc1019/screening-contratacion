@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda Individual - Sistema de Screening</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-search-heart me-2"></i>
+                Sistema Screening
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="upload.html">
+                            <i class="bi bi-cloud-upload me-1"></i>Cargar Archivos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="search.html">
+                            <i class="bi bi-search me-1"></i>Búsqueda Individual
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="batch-search.html">
+                            <i class="bi bi-stack me-1"></i>Búsqueda Masiva
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html">
+                            <i class="bi bi-table me-1"></i>Resultados
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="h2 text-dark fw-bold">
+                    <i class="bi bi-search me-2 text-primary"></i>
+                    Búsqueda Individual
+                </h1>
+                <p class="text-muted">Buscar una persona específica en bases de datos locales y sitios externos</p>
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-search me-2"></i>
+                            Configuración de Búsqueda
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="searchForm">
+                            <!-- Search Term -->
+                            <div class="mb-3">
+                                <label for="searchTerm" class="form-label">
+                                    <i class="bi bi-pencil me-1"></i>
+                                    Término de Búsqueda
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="searchTerm" 
+                                       placeholder="Ej: Juan Pérez García o RFC123456"
+                                       required>
+                                <div class="form-text">Ingrese nombre completo o identificación</div>
+                            </div>
+
+                            <!-- Search Type -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-funnel me-1"></i>
+                                    Tipo de Búsqueda
+                                </label>
+                                <div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="searchType" id="searchName" value="name" checked>
+                                        <label class="form-check-label" for="searchName">
+                                            <i class="bi bi-person me-1"></i>Por Nombre
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="searchType" id="searchId" value="identification">
+                                        <label class="form-check-label" for="searchId">
+                                            <i class="bi bi-card-text me-1"></i>Por Identificación
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="searchType" id="searchBoth" value="both">
+                                        <label class="form-check-label" for="searchBoth">
+                                            <i class="bi bi-search me-1"></i>Búsqueda Inteligente
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Similarity Threshold -->
+                            <div class="mb-3">
+                                <label for="similarityThreshold" class="form-label">
+                                    <i class="bi bi-percent me-1"></i>
+                                    Umbral de Similitud: <span id="thresholdValue">70</span>%
+                                </label>
+                                <input type="range" 
+                                       class="form-range" 
+                                       id="similarityThreshold" 
+                                       min="50" 
+                                       max="100" 
+                                       value="70" 
+                                       step="5">
+                                <div class="form-text">Porcentaje mínimo de similitud para coincidencias</div>
+                            </div>
+
+                            <!-- Search Options -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-gear me-1"></i>
+                                    Opciones de Búsqueda
+                                </label>
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="includeLocal" checked>
+                                        <label class="form-check-label" for="includeLocal">
+                                            <i class="bi bi-database me-1"></i>Buscar en base local
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="includeExternal" checked>
+                                        <label class="form-check-label" for="includeExternal">
+                                            <i class="bi bi-globe me-1"></i>Buscar en sitios externos
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="searchBtn">
+                                    <i class="bi bi-search me-2"></i>
+                                    Buscar Ahora
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="clearBtn">
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Search History -->
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>
+                            Búsquedas Recientes
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="searchHistory" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center py-3 text-muted">
+                                <small>No hay búsquedas recientes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Sites Selection -->
+            <div class="col-lg-8 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-globe me-2"></i>
+                                Sitios Externos (22 disponibles)
+                            </h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="selectAllSites()">
+                                    <i class="bi bi-check-all me-1"></i>Todos
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearAllSites()">
+                                    <i class="bi bi-x me-1"></i>Ninguno
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="externalSitesContainer">
+                            <!-- Sites will be loaded dynamically -->
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando sitios...</span>
+                                </div>
+                                <p class="text-muted mt-2">Cargando sitios disponibles...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Progress -->
+        <div id="searchProgress" class="row" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-hourglass-split me-2"></i>
+                            Búsqueda en Progreso
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">Progreso General</span>
+                                <span class="badge bg-info" id="overallProgress">0%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                     id="overallProgressBar" 
+                                     style="width: 0%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="fw-semibold">
+                                    <i class="bi bi-database me-1"></i>
+                                    Búsqueda Local
+                                </h6>
+                                <div id="localSearchStatus" class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    <span>Iniciando...</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-semibold">
+                                    <i class="bi bi-globe me-1"></i>
+                                    Búsqueda Externa
+                                </h6>
+                                <div id="externalSearchStatus" class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
+                                    <span>Esperando...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Tiempo transcurrido: <span id="elapsedTime">0s</span></small>
+                                <button class="btn btn-sm btn-outline-danger" onclick="cancelSearch()">
+                                    <i class="bi bi-stop-circle me-1"></i>Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div id="searchResults" class="row" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Resultados de Búsqueda
+                            </h5>
+                            <button class="btn btn-sm btn-light" onclick="exportResults()">
+                                <i class="bi bi-download me-1"></i>Exportar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Results Summary -->
+                        <div class="row mb-4">
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h4 fw-bold text-primary mb-1" id="localMatchesCount">0</div>
+                                    <div class="small text-muted">Coincidencias Locales</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h4 fw-bold text-success mb-1" id="externalMatchesCount">0</div>
+                                    <div class="small text-muted">Sitios con Resultados</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h4 fw-bold text-info mb-1" id="totalSitesSearched">0</div>
+                                    <div class="small text-muted">Sitios Consultados</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h4 fw-bold text-warning mb-1" id="searchDuration">0s</div>
+                                    <div class="small text-muted">Tiempo Total</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Tabs -->
+                        <ul class="nav nav-tabs" id="resultsTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="local-tab" data-bs-toggle="tab" data-bs-target="#local-results" type="button">
+                                    <i class="bi bi-database me-1"></i>
+                                    Resultados Locales <span class="badge bg-primary ms-1" id="localTabCount">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="external-tab" data-bs-toggle="tab" data-bs-target="#external-results" type="button">
+                                    <i class="bi bi-globe me-1"></i>
+                                    Resultados Externos <span class="badge bg-success ms-1" id="externalTabCount">0</span>
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content mt-3" id="resultsTabContent">
+                            <!-- Local Results Tab -->
+                            <div class="tab-pane fade show active" id="local-results" role="tabpanel">
+                                <div id="localResultsContainer">
+                                    <!-- Local results will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- External Results Tab -->
+                            <div class="tab-pane fade" id="external-results" role="tabpanel">
+                                <div id="externalResultsContainer">
+                                    <!-- External results will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Result Detail Modal -->
+    <div class="modal fade" id="resultDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Detalles del Resultado
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalResultContent">
+                    <!-- Result details will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="copyResultToClipboard()">
+                        <i class="bi bi-clipboard me-1"></i>Copiar
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-white">Procesando búsqueda...</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/progress.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/search.js"></script>
+
+    <script>
+        // Variables globales para la página de búsqueda
+        let currentSearch = null;
+        let searchStartTime = null;
+        let searchInterval = null;
+        let availableSites = [];
+
+        // Inicializar página cuando esté lista
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Inicializando página de búsqueda individual...');
+            
+            // Configurar eventos del formulario
+            setupSearchForm();
+            
+            // Cargar sitios disponibles
+            loadAvailableSites();
+            
+            // Cargar historial de búsquedas
+            loadSearchHistory();
+            
+            // Configurar controles de similitud
+            setupSimilarityControl();
+        });
+
+        /**
+         * Configura el formulario de búsqueda
+         */
+        function setupSearchForm() {
+            const form = document.getElementById('searchForm');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            form.addEventListener('submit', handleSearch);
+            clearBtn.addEventListener('click', clearForm);
+            
+            // Auto-guardar término de búsqueda
+            const searchTerm = document.getElementById('searchTerm');
+            searchTerm.addEventListener('input', debounce(saveSearchDraft, 500));
+            
+            // Restaurar borrador si existe
+            restoreSearchDraft();
+        }
+
+        /**
+         * Configura el control de similitud
+         */
+        function setupSimilarityControl() {
+            const slider = document.getElementById('similarityThreshold');
+            const valueDisplay = document.getElementById('thresholdValue');
+            
+            slider.addEventListener('input', function() {
+                valueDisplay.textContent = this.value;
+            });
+        }
+
+        /**
+         * Maneja el envío del formulario de búsqueda
+         */
+        async function handleSearch(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const searchTerm = formData.get('searchTerm').trim();
+            
+            if (!searchTerm) {
+                app.showToast('warning', 'Campo Requerido', 'Por favor ingrese un término de búsqueda');
+                return;
+            }
+            
+            const searchConfig = {
+                search_term: searchTerm,
+                search_mode: document.querySelector('input[name="searchType"]:checked').value,
+                min_similarity: parseInt(document.getElementById('similarityThreshold').value),
+                include_local: document.getElementById('includeLocal').checked,
+                include_external: document.getElementById('includeExternal').checked,
+                selected_sites: getSelectedSites()
+            };
+            
+            try {
+                // Mostrar progreso
+                showSearchProgress();
+                
+                // Realizar búsqueda
+                const result = await performSearch(searchConfig);
+                
+                // Mostrar resultados
+                showSearchResults(result);
+                
+                // Guardar en historial
+                saveToSearchHistory(searchConfig, result);
+                
+            } catch (error) {
+                console.error('Error en búsqueda:', error);
+                app.showToast('error', 'Error de Búsqueda', error.message);
+                hideSearchProgress();
+            }
+        }
+
+        /**
+         * Realiza la búsqueda llamando a la API
+         */
+        async function performSearch(config) {
+            searchStartTime = Date.now();
+            
+            const response = await app.apiRequest('search.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    search_type: 'individual',
+                    ...config
+                })
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Error en la búsqueda');
+            }
+            
+            return response;
+        }
+
+        /**
+         * Muestra el progreso de búsqueda
+         */
+        function showSearchProgress() {
+            document.getElementById('searchProgress').style.display = 'block';
+            document.getElementById('searchResults').style.display = 'none';
+            
+            // Deshabilitar formulario
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Buscando...';
+            
+            // Iniciar contador de tiempo
+            let elapsed = 0;
+            searchInterval = setInterval(() => {
+                elapsed++;
+                document.getElementById('elapsedTime').textContent = elapsed + 's';
+            }, 1000);
+        }
+
+        /**
+         * Oculta el progreso de búsqueda
+         */
+        function hideSearchProgress() {
+            document.getElementById('searchProgress').style.display = 'none';
+            
+            // Rehabilitar formulario
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Buscar Ahora';
+            
+            // Limpiar intervalo
+            if (searchInterval) {
+                clearInterval(searchInterval);
+                searchInterval = null;
+            }
+        }
+
+        /**
+         * Muestra los resultados de búsqueda
+         */
+        function showSearchResults(result) {
+            hideSearchProgress();
+            
+            const localResults = result.results?.local_results?.results || [];
+            const externalResults = result.results?.external_results?.results || [];
+            
+            // Actualizar resumen
+            updateResultsSummary(localResults, externalResults, result);
+            
+            // Mostrar resultados locales
+            displayLocalResults(localResults);
+            
+            // Mostrar resultados externos
+            displayExternalResults(externalResults);
+            
+            // Mostrar contenedor de resultados
+            document.getElementById('searchResults').style.display = 'block';
+            
+            // Scroll a resultados
+            document.getElementById('searchResults').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Actualiza el resumen de resultados
+         */
+        function updateResultsSummary(localResults, externalResults, result) {
+            const localCount = localResults.length;
+            const externalWithResults = externalResults.filter(r => r.has_results).length;
+            const totalSites = externalResults.length;
+            const duration = Math.round((Date.now() - searchStartTime) / 1000);
+            
+            document.getElementById('localMatchesCount').textContent = localCount;
+            document.getElementById('externalMatchesCount').textContent = externalWithResults;
+            document.getElementById('totalSitesSearched').textContent = totalSites;
+            document.getElementById('searchDuration').textContent = duration + 's';
+            
+            // Actualizar badges en tabs
+            document.getElementById('localTabCount').textContent = localCount;
+            document.getElementById('externalTabCount').textContent = externalWithResults;
+        }
+
+        /**
+         * Muestra resultados locales
+         */
+        function displayLocalResults(results) {
+            const container = document.getElementById('localResultsContainer');
+            
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-search display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">No se encontraron coincidencias locales</h5>
+                        <p class="text-muted">Intente reducir el umbral de similitud o verificar el término de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const resultsHTML = results.map(result => `
+                <div class="card search-result-card match-${getMatchLevel(result.similarity_scores.combined_score)} mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="card-title mb-1">
+                                    <i class="bi bi-person-fill me-2"></i>
+                                    ${escapeHtml(result.full_name)}
+                                </h6>
+                                <p class="card-text text-muted mb-2">
+                                    <i class="bi bi-card-text me-1"></i>
+                                    ID: ${escapeHtml(result.identification)}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="bi bi-building me-1"></i>
+                                    Fuente: ${escapeHtml(result.source_name)}
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="mb-2">
+                                    <span class="badge badge-similarity ${getSimilarityLevel(result.similarity_scores.combined_score)}">
+                                        ${result.similarity_scores.combined_score.toFixed(1)}% similitud
+                                    </span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-secondary">${result.confidence_level}</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="showResultDetails('${result.record_id}', 'local')">
+                                    <i class="bi bi-eye me-1"></i>Ver Detalles
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = resultsHTML;
+        }
+
+        /**
+         * Muestra resultados externos
+         */
+        function displayExternalResults(results) {
+            const container = document.getElementById('externalResultsContainer');
+            
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-globe display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">No se consultaron sitios externos</h5>
+                        <p class="text-muted">Seleccione sitios externos en la configuración de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const resultsHTML = results.map(result => `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="card-title mb-1">
+                                    <i class="bi bi-globe me-2"></i>
+                                    ${escapeHtml(result.site_name)}
+                                </h6>
+                                <p class="card-text text-muted mb-2">
+                                    Categoría: ${escapeHtml(result.site_category)}
+                                </p>
+                                <small class="text-muted">
+                                    Tiempo: ${result.execution_time || 0}ms
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                ${result.has_results ? 
+                                    `<span class="badge bg-success mb-2">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        ${result.results_count} resultado(s)
+                                    </span>` :
+                                    `<span class="badge bg-secondary mb-2">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        Sin resultados
+                                    </span>`
+                                }
+                                <div>
+                                    ${result.direct_link ? 
+                                        `<a href="${result.direct_link}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                                        </a>` : ''
+                                    }
+                                    ${result.has_results ? 
+                                        `<button class="btn btn-sm btn-outline-info" onclick="showResultDetails('${result.site_name}', 'external')">
+                                            <i class="bi bi-eye me-1"></i>Ver
+                                        </button>` : ''
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = resultsHTML;
+        }
+
+        /**
+         * Obtiene el nivel de coincidencia basado en el porcentaje
+         */
+        function getMatchLevel(percentage) {
+            if (percentage >= 95) return 'exact';
+            if (percentage >= 80) return 'high';
+            if (percentage >= 60) return 'medium';
+            return 'low';
+        }
+
+        /**
+         * Obtiene el nivel de similitud para el badge
+         */
+        function getSimilarityLevel(percentage) {
+            if (percentage >= 85) return 'high';
+            if (percentage >= 70) return 'medium';
+            return 'low';
+        }
+
+        /**
+         * Carga sitios disponibles
+         */
+        async function loadAvailableSites() {
+            try {
+                const response = await app.apiRequest('search.php?action=sites');
+                
+                if (response.success) {
+                    availableSites = response.sites;
+                    displayAvailableSites();
+                }
+                
+            } catch (error) {
+                console.error('Error cargando sitios:', error);
+                document.getElementById('externalSitesContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error cargando sitios: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Muestra sitios disponibles
+         */
+        function displayAvailableSites() {
+            const container = document.getElementById('externalSitesContainer');
+            
+            let html = '';
+            
+            Object.keys(availableSites).forEach(category => {
+                const sites = availableSites[category];
+                const categoryName = getCategoryName(category);
+                
+                html += `
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-${getCategoryIcon(category)} me-2"></i>
+                            ${categoryName} (${sites.length})
+                        </h6>
+                        <div class="row">
+                `;
+                
+                sites.forEach(site => {
+                    html += `
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="scraper-site-card card h-100">
+                                <div class="card-body p-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input site-checkbox" 
+                                               type="checkbox" 
+                                               value="${escapeHtml(site.site_name)}" 
+                                               id="site_${site.id}"
+                                               ${site.is_active ? 'checked' : ''}>
+                                        <label class="form-check-label w-100" for="site_${site.id}">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-semibold">${escapeHtml(site.site_name)}</div>
+                                                    <small class="text-muted">${escapeHtml(site.site_url)}</small>
+                                                </div>
+                                                <span class="site-status-indicator ${site.is_active ? 'status-healthy' : 'status-error'}"
+                                                      title="${site.is_active ? 'Activo' : 'Inactivo'}"></span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Agregar eventos de click a las tarjetas
+            container.querySelectorAll('.scraper-site-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = this.querySelector('.site-checkbox');
+                        checkbox.checked = !checkbox.checked;
+                        this.classList.toggle('selected', checkbox.checked);
+                    }
+                });
+            });
+        }
+
+        /**
+         * Obtiene nombre legible de categoría
+         */
+        function getCategoryName(category) {
+            const names = {
+                'government': 'Gubernamentales',
+                'financial': 'Financieros',
+                'judicial': 'Judiciales',
+                'database': 'Bases de Datos',
+                'media': 'Medios'
+            };
+            return names[category] || category;
+        }
+
+        /**
+         * Obtiene icono de categoría
+         */
+        function getCategoryIcon(category) {
+            const icons = {
+                'government': 'building',
+                'financial': 'bank',
+                'judicial': 'scales',
+                'database': 'database',
+                'media': 'newspaper'
+            };
+            return icons[category] || 'globe';
+        }
+
+        /**
+         * Obtiene sitios seleccionados
+         */
+        function getSelectedSites() {
+            const checkboxes = document.querySelectorAll('.site-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        /**
+         * Selecciona todos los sitios
+         */
+        function selectAllSites() {
+            document.querySelectorAll('.site-checkbox').forEach(cb => {
+                cb.checked = true;
+                cb.closest('.scraper-site-card').classList.add('selected');
+            });
+        }
+
+        /**
+         * Deselecciona todos los sitios
+         */
+        function clearAllSites() {
+            document.querySelectorAll('.site-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.scraper-site-card').classList.remove('selected');
+            });
+        }
+
+        /**
+         * Limpia el formulario
+         */
+        function clearForm() {
+            document.getElementById('searchForm').reset();
+            document.getElementById('thresholdValue').textContent = '70';
+            clearSearchDraft();
+        }
+
+        /**
+         * Guarda borrador de búsqueda
+         */
+        function saveSearchDraft() {
+            const searchTerm = document.getElementById('searchTerm').value;
+            localStorage.setItem('search_draft', searchTerm);
+        }
+
+        /**
+         * Restaura borrador de búsqueda
+         */
+        function restoreSearchDraft() {
+            const draft = localStorage.getItem('search_draft');
+            if (draft) {
+                document.getElementById('searchTerm').value = draft;
+            }
+        }
+
+        /**
+         * Limpia borrador de búsqueda
+         */
+        function clearSearchDraft() {
+            localStorage.removeItem('search_draft');
+        }
+
+        /**
+         * Carga historial de búsquedas
+         */
+        function loadSearchHistory() {
+            const history = JSON.parse(localStorage.getItem('search_history') || '[]');
+            displaySearchHistory(history.slice(0, 5)); // Solo las últimas 5
+        }
+
+        /**
+         * Muestra historial de búsquedas
+         */
+        function displaySearchHistory(history) {
+            const container = document.getElementById('searchHistory');
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3 text-muted">
+                        <small>No hay búsquedas recientes</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = history.map(item => `
+                <div class="p-2 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold small">${escapeHtml(item.term)}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                ${item.localResults} locales, ${item.externalResults} externos
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="repeatSearch('${escapeHtml(item.term)}')">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        /**
+         * Guarda búsqueda en historial
+         */
+        function saveToSearchHistory(config, result) {
+            const history = JSON.parse(localStorage.getItem('search_history') || '[]');
+            
+            const newEntry = {
+                term: config.search_term,
+                timestamp: Date.now(),
+                localResults: result.results?.local_results?.results?.length || 0,
+                externalResults: result.results?.external_results?.results?.filter(r => r.has_results)?.length || 0
+            };
+            
+            // Agregar al inicio y mantener solo 10
+            history.unshift(newEntry);
+            history.splice(10);
+            
+            localStorage.setItem('search_history', JSON.stringify(history));
+            loadSearchHistory();
+        }
+
+        /**
+         * Repite una búsqueda del historial
+         */
+        function repeatSearch(term) {
+            document.getElementById('searchTerm').value = term;
+            document.getElementById('searchTerm').focus();
+        }
+
+        /**
+         * Cancela búsqueda actual
+         */
+        function cancelSearch() {
+            if (currentSearch) {
+                // Aquí cancelarías la petición si es posible
+                currentSearch = null;
+            }
+            hideSearchProgress();
+            app.showToast('info', 'Búsqueda Cancelada', 'La búsqueda ha sido cancelada');
+        }
+
+        /**
+         * Exporta resultados
+         */
+        function exportResults() {
+            // Implementar exportación de resultados
+            app.showToast('info', 'Exportar', 'Función de exportación en desarrollo');
+        }
+
+        /**
+         * Muestra detalles de un resultado
+         */
+        function showResultDetails(id, type) {
+            // Implementar modal de detalles
+            app.showToast('info', 'Detalles', 'Modal de detalles en desarrollo');
+        }
+
+        /**
+         * Copia resultado al portapapeles
+         */
+        function copyResultToClipboard() {
+            // Implementar copia al portapapeles
+            app.showToast('success', 'Copiado', 'Resultado copiado al portapapeles');
+        }
+
+        /**
+         * Escapa HTML para prevenir XSS
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Debounce para funciones
+         */
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>

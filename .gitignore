@@ -1,0 +1,169 @@
+# =====================================================
+# GITIGNORE - SISTEMA SCREENING CONTRATACIÓN
+# =====================================================
+
+# Variables de entorno y configuración sensible
+.env
+.env.local
+.env.production
+config/secrets.php
+
+# Dependencias PHP
+/vendor/
+composer.lock
+
+# Dependencias Node.js
+node_modules/
+package-lock.json
+scrapers/node_modules/
+scrapers/package-lock.json
+
+# Archivos subidos y temporales
+uploads/
+!uploads/.gitkeep
+uploads/excel_files/
+uploads/local_databases/
+uploads/search_files/
+temp/
+tmp/
+
+# Reportes y exportaciones
+exports/
+!exports/.gitkeep
+exports/reports/
+exports/results/
+
+# Logs del sistema
+logs/
+!logs/.gitkeep
+*.log
+logs/*.log
+
+# Cache y archivos temporales
+cache/
+storage/cache/
+*.cache
+.cache/
+
+# Backups de base de datos
+database/backups/
+*.sql.gz
+*.dump
+*.backup
+
+# Archivos del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs y editores
+.vscode/
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# PHP específico
+*.php~
+*.php.bak
+.phpunit.result.cache
+phpunit.xml
+
+# Archivos de testing
+tests/reports/
+tests/coverage/
+.phpunit.cache
+
+# Archivos de build y distribución
+build/
+dist/
+public/build/
+
+# Configuraciones locales de desarrollo
+.env.development
+docker-compose.override.yml
+Dockerfile.local
+
+# Archivos de configuración específicos del servidor
+.htaccess.local
+nginx.conf.local
+apache.conf.local
+
+# Screenshots y documentación temporal
+screenshots/
+docs/temp/
+docs/build/
+
+# Archivos de error y debug
+error.log
+debug.log
+php_errors.log
+
+# Certificados SSL y claves
+*.pem
+*.key
+*.crt
+*.p12
+ssl/
+
+# Archivos de monitoreo y métricas
+metrics/
+monitoring/
+*.pid
+
+# Configuraciones de proxy y scrapers
+scrapers/config/proxies.json
+scrapers/config/user-agents.txt
+scrapers/cookies/
+
+# Archivos grandes de testing
+tests/fixtures/large_files/
+tests/fixtures/*.xlsx
+tests/fixtures/*.csv
+
+# Archivos de sesión PHP
+sess_*
+session_*
+
+# Archivos de configuración de deployment
+deploy/
+deployment/
+.deploy/
+
+# Archivos temporales de Excel/Office
+~$*.xlsx
+~$*.xls
+~$*.csv
+
+# =====================================================
+# MANTENER ESTOS ARCHIVOS (con ! delante)
+# =====================================================
+
+# Mantener estructura de directorios vacíos
+!uploads/.gitkeep
+!logs/.gitkeep
+!exports/.gitkeep
+!database/backups/.gitkeep
+!tests/fixtures/.gitkeep
+
+# Mantener ejemplos de configuración
+!.env.example
+!config/examples/
+!docs/examples/
+
+# Mantener archivos de testing pequeños
+!tests/fixtures/sample.xlsx
+!tests/fixtures/test_data.csv
+
+# Mantener scripts de utilidad
+!scripts/
+!database/migrations/
+!database/seeds/

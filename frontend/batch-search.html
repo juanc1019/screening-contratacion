@@ -1,0 +1,1553 @@
+<div id="liveUpdates" style="height: 150px; overflow-y: auto;">
+                                            <!-- Live updates will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Control Buttons -->
+                            <div class="text-center mt-4">
+                                <button class="btn btn-outline-danger me-3" id="pauseBtn" onclick="pauseBatch()" style="display: none;">
+                                    <i class="bi bi-pause-circle me-1"></i>Pausar
+                                </button>
+                                <button class="btn btn-outline-danger" id="cancelBtn" onclick="cancelBatch()">
+                                    <i class="bi bi-stop-circle me-1"></i>Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="stepContent4" class="step-content" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    Búsqueda Masiva Completada
+                                </h5>
+                                <button class="btn btn-light btn-sm" onclick="exportBatchResults()">
+                                    <i class="bi bi-download me-1"></i>Exportar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Results Summary -->
+                            <div class="row mb-4">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <div class="h3 fw-bold text-primary mb-1" id="totalProcessedCount">0</div>
+                                        <div class="small text-muted">Registros Procesados</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <div class="h3 fw-bold text-success mb-1" id="totalLocalMatchesCount">0</div>
+                                        <div class="small text-muted">Coincidencias Locales</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <div class="h3 fw-bold text-warning mb-1" id="totalExternalMatchesCount">0</div>
+                                        <div class="small text-muted">Resultados Externos</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <div class="h3 fw-bold text-info mb-1" id="totalExecutionTime">0s</div>
+                                        <div class="small text-muted">Tiempo Total</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Batch Information -->
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-info-circle me-2"></i>
+                                                Información del Lote
+                                            </h6>
+                                            <div id="batchInfo">
+                                                <!-- Batch info will be inserted here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-graph-up me-2"></i>
+                                                Estadísticas
+                                            </h6>
+                                            <div id="batchStats">
+                                                <!-- Stats will be inserted here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="text-center">
+                                <button class="btn btn-primary btn-lg me-3" onclick="viewDetailedResults()">
+                                    <i class="bi bi-table me-2"></i>
+                                    Ver Resultados Detallados
+                                </button>
+                                <button class="btn btn-outline-secondary btn-lg me-3" onclick="startNewBatch()">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Nueva Búsqueda Masiva
+                                </button>
+                                <button class="btn btn-outline-info btn-lg" onclick="goToDashboard()">
+                                    <i class="bi bi-house me-2"></i>
+                                    Ir al Dashboard
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/progress.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        // Variables globales para batch search
+        let currentStep = 1;
+        let selectedBatchFile = null;
+        let currentBatchId = null;
+        let batchProgressInterval = null;
+        let availableBatchSites = [];
+        let batchStartTime = null;
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📚 Inicializando página de búsqueda masiva...');
+            
+            setupBatchSearch();
+            setupBatchDragAndDrop();
+            setupBatchFileInput();
+            loadRecentFiles();
+            loadBatchSites();
+            setupBatchForm();
+        });
+
+        /**
+         * Configura la página de búsqueda masiva
+         */
+        function setupBatchSearch() {
+            // Configurar slider de similitud
+            const slider = document.getElementById('batchSimilarityThreshold');
+            const valueDisplay = document.getElementById('batchThresholdValue');
+            
+            slider.addEventListener('input', function() {
+                valueDisplay.textContent = this.value;
+            });
+
+            // Auto-generar nombre de lote
+            generateBatchName();
+        }
+
+        /**
+         * Configura drag and drop para batch
+         */
+        function setupBatchDragAndDrop() {
+            const dropZone = document.getElementById('batchDropZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            
+            dropZone.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleBatchFileSelection(files[0]);
+                }
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
+
+        /**
+         * Configura input de archivo para batch
+         */
+        function setupBatchFileInput() {
+            const fileInput = document.getElementById('batchFileInput');
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleBatchFileSelection(e.target.files[0]);
+                }
+            });
+        }
+
+        /**
+         * Maneja selección de archivo para batch
+         */
+        function handleBatchFileSelection(file) {
+            // Validar archivo
+            const validation = validateBatchFile(file);
+            if (!validation.valid) {
+                app.showToast('error', 'Archivo No Válido', validation.errors.join('<br>'));
+                return;
+            }
+            
+            selectedBatchFile = file;
+            displaySelectedFileInfo(file);
+            
+            // Habilitar botón de siguiente paso
+            document.getElementById('nextToStep2').disabled = false;
+        }
+
+        /**
+         * Valida archivo para batch
+         */
+        function validateBatchFile(file) {
+            const errors = [];
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            const allowedExtensions = ['xlsx', 'xls', 'csv'];
+            
+            // Validar tamaño
+            if (file.size > maxSize) {
+                errors.push('El archivo excede el tamaño máximo de 50MB');
+            }
+            
+            // Validar extensión
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(extension)) {
+                errors.push('Tipo de archivo no permitido. Use: .xlsx, .xls, .csv');
+            }
+            
+            return {
+                valid: errors.length === 0,
+                errors: errors
+            };
+        }
+
+        /**
+         * Muestra información del archivo seleccionado
+         */
+        function displaySelectedFileInfo(file) {
+            const container = document.getElementById('selectedFileInfo');
+            
+            container.innerHTML = `
+                <div class="text-center">
+                    <i class="bi bi-file-earmark-excel display-4 text-success mb-2"></i>
+                    <h6 class="fw-bold">${escapeHtml(file.name)}</h6>
+                    <p class="text-muted small mb-2">${formatFileSize(file.size)}</p>
+                    <span class="badge bg-success">Archivo Válido</span>
+                </div>
+                <hr>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Tipo:</span>
+                        <span>${getFileTypeDisplay(file)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Última modificación:</span>
+                        <span>${formatDate(file.lastModified)}</span>
+                    </div>
+                </div>
+                <div class="d-grid mt-3">
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearBatchFile()">
+                        <i class="bi bi-x-circle me-1"></i>Remover
+                    </button>
+                </div>
+            `;
+        }
+
+        /**
+         * Limpia archivo seleccionado
+         */
+        function clearBatchFile() {
+            selectedBatchFile = null;
+            document.getElementById('selectedFileInfo').innerHTML = `
+                <div class="text-center py-3 text-muted">
+                    <i class="bi bi-file-earmark display-4 mb-2"></i>
+                    <p class="small">Ningún archivo seleccionado</p>
+                </div>
+            `;
+            document.getElementById('nextToStep2').disabled = true;
+            document.getElementById('batchFileInput').value = '';
+        }
+
+        /**
+         * Carga archivos recientes
+         */
+        function loadRecentFiles() {
+            const history = JSON.parse(localStorage.getItem('upload_history') || '[]');
+            const searchFiles = history.filter(item => item.type === 'search').slice(0, 5);
+            
+            displayRecentFiles(searchFiles);
+        }
+
+        /**
+         * Muestra archivos recientes
+         */
+        function displayRecentFiles(files) {
+            const container = document.getElementById('recentFiles');
+            
+            if (files.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3 text-muted">
+                        <p class="small mb-0">No hay archivos recientes</p>
+                        <small>Sube archivos desde la <a href="upload.html">página de carga</a></small>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = files.map(file => `
+                <div class="card border mb-2">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${escapeHtml(file.filename)}</h6>
+                                <small class="text-muted">
+                                    ${file.records} registros • ${getTimeAgo(file.timestamp)}
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="selectRecentFile('${escapeHtml(file.filename)}')">
+                                <i class="bi bi-check-circle me-1"></i>Usar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        /**
+         * Selecciona archivo reciente
+         */
+        function selectRecentFile(filename) {
+            // En implementación real, cargarías el archivo del servidor
+            app.showToast('info', 'Función en Desarrollo', 'La selección de archivos recientes estará disponible próximamente');
+        }
+
+        /**
+         * Carga sitios para batch
+         */
+        async function loadBatchSites() {
+            try {
+                const response = await app.apiRequest('search.php?action=sites');
+                
+                if (response.success) {
+                    availableBatchSites = response.sites;
+                    displayBatchSites();
+                }
+                
+            } catch (error) {
+                console.error('Error cargando sitios:', error);
+                document.getElementById('batchSitesContainer').innerHTML = `
+                    <div class="alert alert-danger m-2">
+                        <small>Error cargando sitios: ${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Muestra sitios para batch
+         */
+        function displayBatchSites() {
+            const container = document.getElementById('batchSitesContainer');
+            
+            let html = '';
+            
+            Object.keys(availableBatchSites).forEach(category => {
+                const sites = availableBatchSites[category];
+                const categoryName = getCategoryName(category);
+                
+                html += `
+                    <div class="p-2 border-bottom">
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" 
+                                   type="checkbox" 
+                                   id="category_${category}"
+                                   onchange="toggleCategorySites('${category}', this.checked)">
+                            <label class="form-check-label fw-semibold small" for="category_${category}">
+                                <i class="bi bi-${getCategoryIcon(category)} me-1"></i>
+                                ${categoryName} (${sites.length})
+                            </label>
+                        </div>
+                    </div>
+                `;
+                
+                sites.forEach(site => {
+                    html += `
+                        <div class="p-2 ps-4 border-bottom">
+                            <div class="form-check">
+                                <input class="form-check-input site-checkbox-batch" 
+                                       type="checkbox" 
+                                       value="${escapeHtml(site.site_name)}" 
+                                       id="batch_site_${site.id}"
+                                       data-category="${category}"
+                                       ${site.is_active ? 'checked' : ''}>
+                                <label class="form-check-label small w-100" for="batch_site_${site.id}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>${escapeHtml(site.site_name)}</span>
+                                        <span class="site-status-indicator ${site.is_active ? 'status-healthy' : 'status-error'}"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            
+            container.innerHTML = html;
+            
+            // Actualizar checkboxes de categoría
+            updateCategoryCheckboxes();
+        }
+
+        /**
+         * Alterna sitios de una categoría
+         */
+        function toggleCategorySites(category, checked) {
+            const siteCheckboxes = document.querySelectorAll(`input[data-category="${category}"]`);
+            siteCheckboxes.forEach(checkbox => {
+                checkbox.checked = checked;
+            });
+        }
+
+        /**
+         * Actualiza checkboxes de categoría
+         */
+        function updateCategoryCheckboxes() {
+            Object.keys(availableBatchSites).forEach(category => {
+                const categoryCheckbox = document.getElementById(`category_${category}`);
+                const siteCheckboxes = document.querySelectorAll(`input[data-category="${category}"]`);
+                const checkedSites = document.querySelectorAll(`input[data-category="${category}"]:checked`);
+                
+                if (checkedSites.length === siteCheckboxes.length) {
+                    categoryCheckbox.checked = true;
+                    categoryCheckbox.indeterminate = false;
+                } else if (checkedSites.length > 0) {
+                    categoryCheckbox.checked = false;
+                    categoryCheckbox.indeterminate = true;
+                } else {
+                    categoryCheckbox.checked = false;
+                    categoryCheckbox.indeterminate = false;
+                }
+            });
+        }
+
+        /**
+         * Selecciona todos los sitios batch
+         */
+        function selectAllBatchSites() {
+            document.querySelectorAll('.site-checkbox-batch').forEach(cb => cb.checked = true);
+            document.querySelectorAll('.category-checkbox').forEach(cb => {
+                cb.checked = true;
+                cb.indeterminate = false;
+            });
+        }
+
+        /**
+         * Deselecciona todos los sitios batch
+         */
+        function clearAllBatchSites() {
+            document.querySelectorAll('.site-checkbox-batch').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.category-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+        }
+
+        /**
+         * Configura formulario de batch
+         */
+        function setupBatchForm() {
+            // Eventos de cambio en checkboxes de sitios
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('site-checkbox-batch')) {
+                    updateCategoryCheckboxes();
+                }
+            });
+        }
+
+        /**
+         * Va a un paso específico
+         */
+        function goToStep(step) {
+            if (step === 2 && !selectedBatchFile) {
+                app.showToast('warning', 'Archivo Requerido', 'Selecciona un archivo antes de continuar');
+                return;
+            }
+            
+            if (step === 3) {
+                startBatchExecution();
+                return;
+            }
+            
+            // Ocultar todos los contenidos de paso
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Mostrar contenido del paso actual
+            document.getElementById(`stepContent${step}`).style.display = 'block';
+            
+            // Actualizar indicadores de paso
+            updateStepIndicators(step);
+            
+            currentStep = step;
+        }
+
+        /**
+         * Actualiza indicadores de paso
+         */
+        function updateStepIndicators(activeStep) {
+            for (let i = 1; i <= 4; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                stepElement.classList.remove('active', 'completed');
+                
+                if (i < activeStep) {
+                    stepElement.classList.add('completed');
+                } else if (i === activeStep) {
+                    stepElement.classList.add('active');
+                }
+            }
+        }
+
+        /**
+         * Inicia ejecución del batch
+         */
+        async function startBatchExecution() {
+            try {
+                goToStep(3);
+                batchStartTime = Date.now();
+                
+                // Crear lote
+                const batchConfig = getBatchConfiguration();
+                const result = await createBatch(batchConfig);
+                
+                if (result.success) {
+                    currentBatchId = result.batch_id;
+                    
+                    // Iniciar búsqueda
+                    await startBatchSearch(result.batch_id, batchConfig);
+                    
+                    // Monitorear progreso
+                    startProgressMonitoring();
+                }
+                
+            } catch (error) {
+                console.error('Error iniciando batch:', error);
+                app.showToast('error', 'Error', 'No se pudo iniciar la búsqueda masiva: ' + error.message);
+            }
+        }
+
+        /**
+         * Obtiene configuración del batch
+         */
+        function getBatchConfiguration() {
+            const selectedSites = Array.from(document.querySelectorAll('.site-checkbox-batch:checked'))
+                .map(cb => cb.value);
+            
+            return {
+                batch_name: document.getElementById('batchName').value || 'Lote ' + new Date().toLocaleDateString(),
+                include_local: document.getElementById('includeLocalBatch').checked,
+                include_external: document.getElementById('includeExternalBatch').checked,
+                selected_sites: selectedSites,
+                min_similarity: parseInt(document.getElementById('batchSimilarityThreshold').value),
+                batch_size: parseInt(document.getElementById('batchSize').value),
+                priority: parseInt(document.getElementById('priority').value)
+            };
+        }
+
+        /**
+         * Crea el lote de búsqueda
+         */
+        async function createBatch(config) {
+            // Simular subida de archivo (en implementación real subirías el archivo)
+            updateCreationProgress(25, 'Subiendo archivo...');
+            await sleep(1000);
+            
+            updateCreationProgress(50, 'Procesando archivo Excel...');
+            await sleep(1500);
+            
+            updateCreationProgress(75, 'Creando registros de búsqueda...');
+            await sleep(1000);
+            
+            updateCreationProgress(100, 'Lote creado exitosamente');
+            
+            // En implementación real, llamarías a la API
+            // const response = await app.apiRequest('search.php', {
+            //     method: 'POST',
+            //     body: JSON.stringify({
+            //         search_type: 'create_batch',
+            //         file_path: uploadedFilePath,
+            //         batch_name: config.batch_name,
+            //         search_config: config
+            //     })
+            // });
+            
+            return {
+                success: true,
+                batch_id: 'batch_' + Date.now(),
+                total_records: Math.floor(Math.random() * 100) + 50
+            };
+        }
+
+        /**
+         * Actualiza progreso de creación
+         */
+        function updateCreationProgress(percent, message) {
+            document.getElementById('creationProgressBar').style.width = percent + '%';
+            document.getElementById('creationMessage').textContent = message;
+            
+            if (percent === 100) {
+                document.getElementById('creationStatus').textContent = 'Completado';
+                document.getElementById('creationStatus').className = 'badge bg-success';
+            }
+        }
+
+        /**
+         * Inicia búsqueda del batch
+         */
+        async function startBatchSearch(batchId, config) {
+            await sleep(2000); // Esperar a que termine la creación
+            
+            document.getElementById('searchProgress').style.display = 'block';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+            
+            // En implementación real:
+            // const response = await app.apiRequest('search.php', {
+            //     method: 'POST',
+            //     body: JSON.stringify({
+            //         search_type: 'batch',
+            //         batch_id: batchId,
+            //         search_config: config
+            //     })
+            // });
+        }
+
+        /**
+         * Inicia monitoreo de progreso
+         */
+        function startProgressMonitoring() {
+            let localProgress = 0;
+            let externalProgress = 0;
+            let overallProgress = 0;
+            
+            batchProgressInterval = setInterval(() => {
+                // Simular progreso (en implementación real usarías SSE o polling)
+                localProgress = Math.min(100, localProgress + Math.random() * 5);
+                externalProgress = Math.min(100, externalProgress + Math.random() * 3);
+                overallProgress = (localProgress + externalProgress) / 2;
+                
+                updateProgressBars(localProgress, externalProgress, overallProgress);
+                updateLiveUpdates();
+                updateElapsedTime();
+                
+                if (overallProgress >= 100) {
+                    clearInterval(batchProgressInterval);
+                    completeBatch();
+                }
+            }, 1000);
+        }
+
+        /**
+         * Actualiza barras de progreso
+         */
+        function updateProgressBars(local, external, overall) {
+            document.getElementById('localProgressBar').style.width = local + '%';
+            document.getElementById('externalProgressBar').style.width = external + '%';
+            document.getElementById('overallProgressBar').style.width = overall + '%';
+            document.getElementById('overallProgressBadge').textContent = Math.round(overall) + '%';
+            
+            // Actualizar contadores (simulados)
+            const totalRecords = 87; // En implementación real, obtenerías esto del batch
+            document.getElementById('localProcessed').textContent = `${Math.round(local * totalRecords / 100)} de ${totalRecords}`;
+            document.getElementById('externalProcessed').textContent = `${Math.round(external * totalRecords / 100)} de ${totalRecords}`;
+            document.getElementById('localMatches').textContent = `${Math.round(local * 23 / 100)} coincidencias`;
+            document.getElementById('externalMatches').textContent = `${Math.round(external * 45 / 100)} resultados`;
+        }
+
+        /**
+         * Actualiza actividad en tiempo real
+         */
+        function updateLiveUpdates() {
+            const updates = document.getElementById('liveUpdates');
+            const messages = [
+                'Procesando registro: María González López',
+                'Encontrada coincidencia local con 95% similitud',
+                'Consultando OFAC para: Juan Carlos Pérez',
+                'Resultado encontrado en Fiscalía Colombia',
+                'Procesando registro: Ana María Rodríguez'
+            ];
+            
+            if (Math.random() > 0.7) { // 30% probabilidad de actualización
+                const message = messages[Math.floor(Math.random() * messages.length)];
+                const timestamp = new Date().toLocaleTimeString();
+                
+                const updateDiv = document.createElement('div');
+                updateDiv.className = 'small text-muted mb-1';
+                updateDiv.innerHTML = `<span class="fw-semibold">${timestamp}:</span> ${message}`;
+                
+                updates.appendChild(updateDiv);
+                updates.scrollTop = updates.scrollHeight;
+                
+                // Mantener solo las últimas 10 actualizaciones
+                while (updates.children.length > 10) {
+                    updates.removeChild(updates.firstChild);
+                }
+            }
+        }
+
+        /**
+         * Actualiza tiempo transcurrido
+         */
+        function updateElapsedTime() {
+            if (batchStartTime) {
+                const elapsed = Math.floor((Date.now() - batchStartTime) / 1000);
+                document.getElementById('elapsedTimeBatch').textContent = formatDuration(elapsed);
+                
+                // Estimar tiempo restante
+                const progress = parseFloat(document.getElementById('overallProgressBadge').textContent);
+                if (progress > 5) {
+                    const estimated = Math.floor((elapsed / progress) * (100 - progress));
+                    document.getElementById('estimatedTime').textContent = formatDuration(estimated);
+                }
+            }
+        }
+
+        /**
+         * Completa el batch
+         */
+        function completeBatch() {
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('cancelBtn').innerHTML = '<i class="bi bi-check-circle me-1"></i>Completado';
+            document.getElementById('cancelBtn').disabled = true;
+            
+            // Ir al paso de resultados
+            setTimeout(() => {
+                showBatchResults();
+                goToStep(4);
+            }, 2000);
+        }
+
+        /**
+         * Muestra resultados del batch
+         */
+        function showBatchResults() {
+            // Datos simulados (en implementación real, obtenerías esto de la API)
+            const results = {
+                totalProcessed: 87,
+                localMatches: 23,
+                externalMatches: 45,
+                executionTime: Math.floor((Date.now() - batchStartTime) / 1000)
+            };
+            
+            document.getElementById('totalProcessedCount').textContent = results.totalProcessed;
+            document.getElementById('totalLocalMatchesCount').textContent = results.localMatches;
+            document.getElementById('totalExternalMatchesCount').textContent = results.externalMatches;
+            document.getElementById('totalExecutionTime').textContent = formatDuration(results.executionTime);
+            
+            // Información del lote
+            const batchInfo = document.getElementById('batchInfo');
+            batchInfo.innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Nombre:</strong><br>
+                        <span class="text-muted">${document.getElementById('batchName').value}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Archivo:</strong><br>
+                        <span class="text-muted">${selectedBatchFile ? selectedBatchFile.name : 'N/A'}</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <strong>Sitios Consultados:</strong><br>
+                        <span class="text-muted">${document.querySelectorAll('.site-checkbox-batch:checked').length} sitios</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <strong>Umbral de Similitud:</strong><br>
+                        <span class="text-muted">${document.getElementById('batchSimilarityThreshold').value}%</span>
+                    </div>
+                </div>
+            `;
+            
+            // Estadísticas
+            const batchStats = document.getElementById('batchStats');
+            const successRate = Math.round(((results.localMatches + results.externalMatches) / results.totalProcessed) * 100);
+            batchStats.innerHTML = `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small">Tasa de Éxito:</span>
+                        <span class="small fw-semibold">${successRate}%</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: ${successRate}%"></div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small">Promedio por Registro:</span>
+                        <span class="small fw-semibold">${(results.executionTime / results.totalProcessed).toFixed(1)}s</span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small">Eficiencia:</span>
+                        <span class="small fw-semibold">${Math.round(results.totalProcessed / (results.executionTime / 60))} reg/min</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Genera nombre automático para el lote
+         */
+        function generateBatchName() {
+            const now = new Date();
+            const datePart = now.toLocaleDateString('es-ES').replace(/\//g, '-');
+            const timePart = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('batchName').value = `Lote ${datePart} ${timePart}`;
+        }
+
+        /**
+         * Pausa el batch
+         */
+        function pauseBatch() {
+            // En implementación real, pausarías el batch en el servidor
+            app.showToast('info', 'Pausar Lote', 'Función de pausa en desarrollo');
+        }
+
+        /**
+         * Cancela el batch
+         */
+        function cancelBatch() {
+            if (confirm('¿Estás seguro de que quieres cancelar la búsqueda masiva?')) {
+                if (batchProgressInterval) {
+                    clearInterval(batchProgressInterval);
+                }
+                
+                // En implementación real, cancelarías el batch en el servidor
+                app.showToast('warning', 'Lote Cancelado', 'La búsqueda masiva ha sido cancelada');
+                
+                // Volver al paso 1
+                goToStep(1);
+            }
+        }
+
+        /**
+         * Ver resultados detallados
+         */
+        function viewDetailedResults() {
+            window.location.href = `results.html?batch_id=${currentBatchId}`;
+        }
+
+        /**
+         * Exporta resultados del batch
+         */
+        function exportBatchResults() {
+            app.showToast('info', 'Exportar', 'Función de exportación en desarrollo');
+        }
+
+        /**
+         * Inicia nuevo batch
+         */
+        function startNewBatch() {
+            // Limpiar datos
+            selectedBatchFile = null;
+            currentBatchId = null;
+            batchStartTime = null;
+            
+            if (batchProgressInterval) {
+                clearInterval(batchProgressInterval);
+            }
+            
+            // Limpiar formularios
+            clearBatchFile();
+            generateBatchName();
+            
+            // Volver al paso 1
+            goToStep(1);
+        }
+
+        /**
+         * Va al dashboard
+         */
+        function goToDashboard() {
+            window.location.href = 'index.html';
+        }
+
+        /**
+         * Obtiene nombre de categoría
+         */
+        function getCategoryName(category) {
+            const names = {
+                'government': 'Gubernamentales',
+                'financial': 'Financieros',
+                'judicial': 'Judiciales',
+                'database': 'Bases de Datos',
+                'media': 'Medios'
+            };
+            return names[category] || category;
+        }
+
+        /**
+         * Obtiene icono de categoría
+         */
+        function getCategoryIcon(category) {
+            const icons = {
+                'government': 'building',
+                'financial': 'bank',
+                'judicial': 'scales',
+                'database': 'database',
+                'media': 'newspaper'
+            };
+            return icons[category] || 'globe';
+        }
+
+        /**
+         * Formatea duración en segundos
+         */
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${secs}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+
+        /**
+         * Formatea tamaño de archivo
+         */
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        /**
+         * Obtiene tipo de archivo para mostrar
+         */
+        function getFileTypeDisplay(file) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            const types = {
+                'xlsx': 'Excel 2007+',
+                'xls': 'Excel 97-2003',
+                'csv': 'CSV'
+            };
+            return types[extension] || 'Desconocido';
+        }
+
+        /**
+         * Formatea fecha
+         */
+        function formatDate(timestamp) {
+            return new Date(timestamp).toLocaleDateString('es-ES');
+        }
+
+        /**
+         * Calcula tiempo transcurrido
+         */
+        function getTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
+            if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (minutes > 0) return `hace ${minutes} min`;
+            return 'hace un momento';
+        }
+
+        /**
+         * Escapa HTML
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Función de espera
+         */
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+
+    <style>
+        /* Estilos específicos para batch search */
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .step-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .step-item.active .step-number {
+            background: #0d6efd;
+            color: white;
+        }
+
+        .step-item.active .step-text {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+
+        .step-item.completed .step-number {
+            background: #198754;
+            color: white;
+        }
+
+        .step-item.completed .step-number::after {
+            content: '✓';
+        }
+
+        .step-item.completed .step-text {
+            color: #198754;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #e9ecef;
+            margin: 0 1rem;
+            align-self: flex-start;
+            margin-top: 20px;
+        }
+
+        .step-item.completed + .step-line {
+            background: #198754;
+        }
+
+        @media (max-width: 768px) {
+            .step-item {
+                flex-direction: row;
+                text-align: left;
+                margin-bottom: 1rem;
+            }
+
+            .step-number {
+                margin-right: 0.75rem;
+                margin-bottom: 0;
+                width: 30px;
+                height: 30px;
+                font-size: 0.875rem;
+            }
+
+            .step-text {
+                text-align: left;
+                font-size: 0.8rem;
+            }
+
+            .step-line {
+                display: none;
+            }
+        }
+    </style>
+</body>
+</html>
+                        <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda Masiva - Sistema de Screening</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-search-heart me-2"></i>
+                Sistema Screening
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="upload.html">
+                            <i class="bi bi-cloud-upload me-1"></i>Cargar Archivos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="search.html">
+                            <i class="bi bi-search me-1"></i>Búsqueda Individual
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="batch-search.html">
+                            <i class="bi bi-stack me-1"></i>Búsqueda Masiva
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html">
+                            <i class="bi bi-table me-1"></i>Resultados
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="h2 text-dark fw-bold">
+                    <i class="bi bi-stack me-2 text-primary"></i>
+                    Búsqueda Masiva
+                </h1>
+                <p class="text-muted">Procesar múltiples registros en bases de datos locales y sitios externos</p>
+            </div>
+        </div>
+
+        <!-- Step Progress -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="step-item active" id="step1">
+                                <div class="step-number">1</div>
+                                <div class="step-text">Seleccionar Archivo</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" id="step2">
+                                <div class="step-number">2</div>
+                                <div class="step-text">Configurar Búsqueda</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" id="step3">
+                                <div class="step-number">3</div>
+                                <div class="step-text">Ejecutar</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" id="step4">
+                                <div class="step-number">4</div>
+                                <div class="step-text">Resultados</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: File Selection -->
+        <div id="stepContent1" class="step-content">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                                Seleccionar Archivo de Búsqueda
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- File Upload Option -->
+                            <div class="mb-4">
+                                <h6 class="fw-semibold mb-3">
+                                    <i class="bi bi-upload me-2"></i>
+                                    Subir Nuevo Archivo
+                                </h6>
+                                <div class="drop-zone" id="batchDropZone">
+                                    <div class="drop-zone-content">
+                                        <i class="bi bi-cloud-upload drop-zone-icon"></i>
+                                        <h5 class="mb-3">Arrastra tu archivo Excel aquí</h5>
+                                        <p class="text-muted mb-3">o haz clic para seleccionar</p>
+                                        <button type="button" class="btn btn-primary" onclick="document.getElementById('batchFileInput').click()">
+                                            <i class="bi bi-folder2-open me-2"></i>
+                                            Seleccionar Archivo
+                                        </button>
+                                        <input type="file" id="batchFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recent Files -->
+                            <div class="mb-4">
+                                <h6 class="fw-semibold mb-3">
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    Archivos Recientes
+                                </h6>
+                                <div id="recentFiles">
+                                    <div class="text-center py-3 text-muted">
+                                        <small>Cargando archivos recientes...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <!-- Selected File Info -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Archivo Seleccionado
+                            </h6>
+                        </div>
+                        <div class="card-body" id="selectedFileInfo">
+                            <div class="text-center py-3 text-muted">
+                                <i class="bi bi-file-earmark display-4 mb-2"></i>
+                                <p class="small">Ningún archivo seleccionado</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="bi bi-list-check me-2"></i>
+                                Requisitos del Archivo
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-success me-2"></i>
+                                    Formato: .xlsx, .xls, .csv
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-success me-2"></i>
+                                    Columnas: ID y Nombre
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-success me-2"></i>
+                                    Máximo: 500 registros por lote
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-success me-2"></i>
+                                    Tamaño: Hasta 50MB
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col text-end">
+                    <button class="btn btn-primary btn-lg" id="nextToStep2" disabled onclick="goToStep(2)">
+                        <i class="bi bi-arrow-right me-2"></i>
+                        Continuar a Configuración
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Search Configuration -->
+        <div id="stepContent2" class="step-content" style="display: none;">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-gear me-2"></i>
+                                Configuración de Búsqueda
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="batchConfigForm">
+                                <!-- Batch Name -->
+                                <div class="mb-4">
+                                    <label for="batchName" class="form-label">
+                                        <i class="bi bi-tag me-1"></i>
+                                        Nombre del Lote
+                                    </label>
+                                    <input type="text" class="form-control" id="batchName" 
+                                           placeholder="Ej: Empleados Q1 2024" required>
+                                    <div class="form-text">Nombre descriptivo para identificar este lote</div>
+                                </div>
+
+                                <!-- Search Options -->
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="bi bi-toggles me-1"></i>
+                                        Opciones de Búsqueda
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="includeLocalBatch" checked>
+                                                <label class="form-check-label" for="includeLocalBatch">
+                                                    <i class="bi bi-database me-1"></i>Búsqueda Local
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Buscar en base de datos local</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="includeExternalBatch" checked>
+                                                <label class="form-check-label" for="includeExternalBatch">
+                                                    <i class="bi bi-globe me-1"></i>Búsqueda Externa
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Buscar en sitios externos</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Similarity Threshold -->
+                                <div class="mb-4">
+                                    <label for="batchSimilarityThreshold" class="form-label">
+                                        <i class="bi bi-percent me-1"></i>
+                                        Umbral de Similitud: <span id="batchThresholdValue">70</span>%
+                                    </label>
+                                    <input type="range" class="form-range" id="batchSimilarityThreshold" 
+                                           min="50" max="100" value="70" step="5">
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <span>50% (Flexible)</span>
+                                        <span>100% (Exacto)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Processing Options -->
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="bi bi-sliders me-1"></i>
+                                        Opciones de Procesamiento
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="batchSize" class="form-label small">Tamaño de Lote</label>
+                                            <select class="form-select" id="batchSize">
+                                                <option value="50">50 registros (Rápido)</option>
+                                                <option value="100" selected>100 registros (Balanceado)</option>
+                                                <option value="200">200 registros (Eficiente)</option>
+                                                <option value="500">500 registros (Máximo)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="priority" class="form-label small">Prioridad</label>
+                                            <select class="form-select" id="priority">
+                                                <option value="1">Normal</option>
+                                                <option value="2">Alta</option>
+                                                <option value="3">Muy Alta</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <!-- External Sites Selection -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-globe me-2"></i>
+                                    Sitios Externos
+                                </h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="selectAllBatchSites()">Todos</button>
+                                    <button class="btn btn-sm btn-outline-secondary ms-1" onclick="clearAllBatchSites()">Ninguno</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="batchSitesContainer" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    <p class="text-muted mt-2 small">Cargando sitios...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary btn-lg" onclick="goToStep(1)">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Volver
+                        </button>
+                        <button class="btn btn-warning btn-lg" onclick="goToStep(3)">
+                            <i class="bi bi-play me-2"></i>
+                            Crear y Ejecutar Lote
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Execution -->
+        <div id="stepContent3" class="step-content" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                Ejecutando Búsqueda Masiva
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Batch Creation Progress -->
+                            <div id="batchCreationProgress" class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-semibold">Creando Lote de Búsqueda</span>
+                                    <span class="badge bg-info" id="creationStatus">Procesando...</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                         id="creationProgressBar" style="width: 0%">
+                                    </div>
+                                </div>
+                                <small class="text-muted" id="creationMessage">Validando archivo y creando registros...</small>
+                            </div>
+
+                            <!-- Search Progress -->
+                            <div id="searchProgress" style="display: none;">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold">
+                                            <i class="bi bi-database me-1"></i>
+                                            Búsqueda Local
+                                        </h6>
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar bg-success" id="localProgressBar" style="width: 0%"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small">
+                                            <span id="localProcessed">0 de 0</span>
+                                            <span id="localMatches">0 coincidencias</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold">
+                                            <i class="bi bi-globe me-1"></i>
+                                            Búsqueda Externa
+                                        </h6>
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar bg-warning" id="externalProgressBar" style="width: 0%"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small">
+                                            <span id="externalProcessed">0 de 0</span>
+                                            <span id="externalMatches">0 resultados</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Overall Progress -->
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-semibold">Progreso General</span>
+                                        <span class="badge bg-primary" id="overallProgressBadge">0%</span>
+                                    </div>
+                                    <div class="progress" style="height: 12px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             id="overallProgressBar" style="width: 0%">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between small mt-2">
+                                        <span>Tiempo transcurrido: <span id="elapsedTimeBatch">0s</span></span>
+                                        <span>Tiempo estimado: <span id="estimatedTime">Calculando...</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Live Updates -->
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-activity me-2"></i>
+                                            Actividad en Tiempo Real
+                                        </h6>
+                                        <div id="liveUpdates" style="height: 150px; overflow-y: auto;">
+                                            <!-- Live updates will appear here -->
+                                        </div

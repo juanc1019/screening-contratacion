@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - Sistema de Screening</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-search-heart me-2"></i>
+                Sistema Screening
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="upload.html">
+                            <i class="bi bi-cloud-upload me-1"></i>Cargar Archivos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="search.html">
+                            <i class="bi bi-search me-1"></i>Búsqueda Individual
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="batch-search.html">
+                            <i class="bi bi-stack me-1"></i>Búsqueda Masiva
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="results.html">
+                            <i class="bi bi-table me-1"></i>Resultados
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="h2 text-dark fw-bold">
+                    <i class="bi bi-table me-2 text-primary"></i>
+                    Resultados de Búsquedas
+                </h1>
+                <p class="text-muted">Visualizar y analizar resultados de búsquedas individuales y masivas</p>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary me-2" onclick="refreshResults()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                </button>
+                <button class="btn btn-primary" onclick="exportAllResults()">
+                    <i class="bi bi-download me-1"></i>Exportar Todo
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="filter-panel">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 mb-2">
+                            <label for="filterType" class="form-label small fw-semibold">Tipo de Búsqueda</label>
+                            <select class="form-select form-select-sm" id="filterType" onchange="applyFilters()">
+                                <option value="">Todos los tipos</option>
+                                <option value="individual">Individual</option>
+                                <option value="batch">Masiva</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="filterStatus" class="form-label small fw-semibold">Estado</label>
+                            <select class="form-select form-select-sm" id="filterStatus" onchange="applyFilters()">
+                                <option value="">Todos los estados</option>
+                                <option value="completed">Completado</option>
+                                <option value="processing">En Proceso</option>
+                                <option value="failed">Fallido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="filterDate" class="form-label small fw-semibold">Fecha</label>
+                            <select class="form-select form-select-sm" id="filterDate" onchange="applyFilters()">
+                                <option value="">Todas las fechas</option>
+                                <option value="today">Hoy</option>
+                                <option value="week">Esta semana</option>
+                                <option value="month">Este mes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="searchFilter" class="form-label small fw-semibold">Buscar</label>
+                            <input type="text" class="form-control form-control-sm" id="searchFilter" 
+                                   placeholder="Buscar por nombre o ID" onkeyup="applyFilters()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body p-3">
+                        <i class="bi bi-search display-6 text-primary mb-2"></i>
+                        <h5 class="fw-bold mb-1" id="totalSearches">0</h5>
+                        <small class="text-muted">Total Búsquedas</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body p-3">
+                        <i class="bi bi-check-circle display-6 text-success mb-2"></i>
+                        <h5 class="fw-bold mb-1" id="completedSearches">0</h5>
+                        <small class="text-muted">Completadas</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body p-3">
+                        <i class="bi bi-bullseye display-6 text-warning mb-2"></i>
+                        <h5 class="fw-bold mb-1" id="totalMatches">0</h5>
+                        <small class="text-muted">Coincidencias</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body p-3">
+                        <i class="bi bi-clock-history display-6 text-info mb-2"></i>
+                        <h5 class="fw-bold mb-1" id="avgExecutionTime">0s</h5>
+                        <small class="text-muted">Tiempo Promedio</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-ul me-2"></i>
+                                Historial de Búsquedas
+                            </h5>
+                            <div class="d-flex align-items-center">
+                                <span class="small text-muted me-3" id="resultsCount">Mostrando 0 de 0 resultados</span>
+                                <select class="form-select form-select-sm" style="width: auto;" id="resultsPerPage" onchange="changeResultsPerPage()">
+                                    <option value="10">10 por página</option>
+                                    <option value="25" selected>25 por página</option>
+                                    <option value="50">50 por página</option>
+                                    <option value="100">100 por página</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                            </div>
+                                        </th>
+                                        <th style="cursor: pointer;" onclick="sortResults('name')">
+                                            Búsqueda
+                                            <i class="bi bi-arrow-down-up small ms-1"></i>
+                                        </th>
+                                        <th style="cursor: pointer;" onclick="sortResults('type')">
+                                            Tipo
+                                            <i class="bi bi-arrow-down-up small ms-1"></i>
+                                        </th>
+                                        <th style="cursor: pointer;" onclick="sortResults('date')">
+                                            Fecha
+                                            <i class="bi bi-arrow-down-up small ms-1"></i>
+                                        </th>
+                                        <th style="cursor: pointer;" onclick="sortResults('status')">
+                                            Estado
+                                            <i class="bi bi-arrow-down-up small ms-1"></i>
+                                        </th>
+                                        <th class="text-center">Resultados</th>
+                                        <th class="text-center">Tiempo</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                            <p class="text-muted mt-2 mb-0">Cargando resultados...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="bulkAction('export')" id="bulkExportBtn" disabled>
+                                        <i class="bi bi-download me-1"></i>Exportar Seleccionados
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="bulkAction('delete')" id="bulkDeleteBtn" disabled>
+                                        <i class="bi bi-trash me-1"></i>Eliminar Seleccionados
+                                    </button>
+                                </div>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="pagination">
+                                        <!-- Pagination will be generated here -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Detail Modal -->
+    <div class="modal fade" id="resultDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-eye me-2"></i>
+                        Detalles de la Búsqueda
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetailContent">
+                    <!-- Content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="exportSingleResult()">
+                        <i class="bi bi-download me-1"></i>Exportar
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="repeatSearch()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Repetir Búsqueda
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        // Variables globales para results
+        let allResults = [];
+        let filteredResults = [];
+        let currentPage = 1;
+        let resultsPerPage = 25;
+        let sortField = 'date';
+        let sortDirection = 'desc';
+        let selectedResults = new Set();
+        let currentResultDetail = null;
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Inicializando página de resultados...');
+            
+            setupResultsPage();
+            loadResults();
+            
+            // Verificar si hay un batch_id específico en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const batchId = urlParams.get('batch_id');
+            if (batchId) {
+                loadBatchResults(batchId);
+            }
+        });
+
+        /**
+         * Configura la página de resultados
+         */
+        function setupResultsPage() {
+            // Configurar eventos
+            document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
+            
+            // Auto-aplicar filtros al escribir
+            let searchTimeout;
+            document.getElementById('searchFilter').addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(applyFilters, 300);
+            });
+        }
+
+        /**
+         * Carga todos los resultados
+         */
+        async function loadResults() {
+            try {
+                // En implementación real, cargarías desde la API
+                // const response = await app.apiRequest('results.php?action=list');
+                
+                // Datos simulados para demostración
+                allResults = generateMockResults(50);
+                
+                updateOverviewStats();
+                applyFilters();
+                
+            } catch (error) {
+                console.error('Error cargando resultados:', error);
+                showErrorState();
+            }
+        }
+
+        /**
+         * Genera datos simulados para demostración
+         */
+        function generateMockResults(count) {
+            const results = [];
+            const names = ['Juan Pérez', 'María González', 'Carlos Rodríguez', 'Ana López', 'Luis Martínez'];
+            const types = ['individual', 'batch'];
+            const statuses = ['completed', 'processing', 'failed'];
+            
+            for (let i = 0; i < count; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+                
+                const type = types[Math.floor(Math.random() * types.length)];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                
+                results.push({
+                    id: `search_${i + 1}`,
+                    name: type === 'batch' ? `Lote ${Math.floor(Math.random() * 100)}` : names[Math.floor(Math.random() * names.length)],
+                    type: type,
+                    date: date.toISOString(),
+                    status: status,
+                    localMatches: status === 'completed' ? Math.floor(Math.random() * 20) : 0,
+                    externalMatches: status === 'completed' ? Math.floor(Math.random() * 15) : 0,
+                    executionTime: status === 'completed' ? Math.floor(Math.random() * 120) + 10 : 0,
+                    recordsProcessed: type === 'batch' ? Math.floor(Math.random() * 100) + 10 : 1
+                });
+            }
+            
+            return results.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        /**
+         * Actualiza estadísticas generales
+         */
+        function updateOverviewStats() {
+            const total = allResults.length;
+            const completed = allResults.filter(r => r.status === 'completed').length;
+            const totalMatches = allResults.reduce((sum, r) => sum + r.localMatches + r.externalMatches, 0);
+            const avgTime = completed > 0 ? 
+                Math.round(allResults.filter(r => r.status === 'completed')
+                    .reduce((sum, r) => sum + r.executionTime, 0) / completed) : 0;
+            
+            document.getElementById('totalSearches').textContent = total;
+            document.getElementById('completedSearches').textContent = completed;
+            document.getElementById('totalMatches').textContent = totalMatches;
+            document.getElementById('avgExecutionTime').textContent = avgTime + 's';
+        }
+
+        /**
+         * Aplica filtros a los resultados
+         */
+        function applyFilters() {
+            const typeFilter = document.getElementById('filterType').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const dateFilter = document.getElementById('filterDate').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+            
+            filteredResults = allResults.filter(result => {
+                // Filtro por tipo
+                if (typeFilter && result.type !== typeFilter) return false;
+                
+                // Filtro por estado
+                if (statusFilter && result.status !== statusFilter) return false;
+                
+                // Filtro por fecha
+                if (dateFilter) {
+                    const resultDate = new Date(result.date);
+                    const now = new Date();
+                    
+                    switch (dateFilter) {
+                        case 'today':
+                            if (!isSameDay(resultDate, now)) return false;
+                            break;
+                        case 'week':
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            if (resultDate < weekAgo) return false;
+                            break;
+                        case 'month':
+                            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                            if (resultDate < monthAgo) return false;
+                            break;
+                    }
+                }
+                
+                // Filtro por búsqueda de texto
+                if (searchFilter && !result.name.toLowerCase().includes(searchFilter)) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            // Aplicar ordenamiento
+            sortResults(sortField, false);
+            
+            // Resetear página
+            currentPage = 1;
+            
+            // Actualizar display
+            displayResults();
+            updatePagination();
+            updateResultsCount();
+        }
+
+        /**
+         * Ordena los resultados
+         */
+        function sortResults(field, toggleDirection = true) {
+            if (toggleDirection && field === sortField) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else if (toggleDirection) {
+                sortField = field;
+                sortDirection = 'desc';
+            }
+            
+            filteredResults.sort((a, b) => {
+                let valueA, valueB;
+                
+                switch (field) {
+                    case 'name':
+                        valueA = a.name.toLowerCase();
+                        valueB = b.name.toLowerCase();
+                        break;
+                    case 'type':
+                        valueA = a.type;
+                        valueB = b.type;
+                        break;
+                    case 'date':
+                        valueA = new Date(a.date);
+                        valueB = new Date(b.date);
+                        break;
+                    case 'status':
+                        valueA = a.status;
+                        valueB = b.status;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            if (toggleDirection) {
+                displayResults();
+            }
+        }
+
+        /**
+         * Muestra los resultados en la tabla
+         */
+        function displayResults() {
+            const tbody = document.getElementById('resultsTableBody');
+            
+            if (filteredResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <i class="bi bi-search display-4 text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron resultados</h5>
+                            <p class="text-muted">Intenta ajustar los filtros o realizar una nueva búsqueda</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const startIndex = (currentPage - 1) * resultsPerPage;
+            const endIndex = Math.min(startIndex + resultsPerPage, filteredResults.length);
+            const pageResults = filteredResults.slice(startIndex, endIndex);
+            
+            const rows = pageResults.map(result => `
+                <tr class="result-row" data-id="${result.id}">
+                    <td>
+                        <div class="form-check">
+                            <input class="form-check-input result-checkbox" 
+                                   type="checkbox" 
+                                   value="${result.id}"
+                                   onchange="updateBulkActions()">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-${result.type === 'batch' ? 'stack' : 'search'} me-2 text-${result.type === 'batch' ? 'warning' : 'primary'}"></i>
+                            <div>
+                                <div class="fw-semibold">${escapeHtml(result.name)}</div>
+                                ${result.type === 'batch' ? `<small class="text-muted">${result.recordsProcessed} registros</small>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-${result.type === 'batch' ? 'warning' : 'primary'}">
+                            ${result.type === 'batch' ? 'Masiva' : 'Individual'}
+                        </span>
+                    </td>
+                    <td>
+                        <div>${formatDate(result.date)}</div>
+                        <small class="text-muted">${formatTime(result.date)}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(result.status)}">
+                            <i class="bi bi-${getStatusIcon(result.status)} me-1"></i>
+                            ${getStatusText(result.status)}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        ${result.status === 'completed' ? `
+                            <div class="small">
+                                <div class="text-success fw-semibold">${result.localMatches + result.externalMatches}</div>
+                                <div class="text-muted">${result.localMatches}L + ${result.externalMatches}E</div>
+                            </div>
+                        ` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${result.status === 'completed' ? `
+                            <span class="badge bg-light text-dark">${result.executionTime}s</span>
+                        ` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary btn-sm" 
+                                    onclick="viewResultDetail('${result.id}')"
+                                    title="Ver detalles">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" 
+                                    onclick="exportResult('${result.id}')"
+                                    title="Exportar">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="deleteResult('${result.id}')"
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            tbody.innerHTML = rows;
+            
+            // Actualizar selecciones
+            selectedResults.forEach(id => {
+                const checkbox = document.querySelector(`input[value="${id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+
+        /**
+         * Actualiza la paginación
+         */
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // Botón anterior
+            html += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+            
+            // Páginas
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(1)">1</a></li>`;
+                if (startPage > 2) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${totalPages})">${totalPages}</a></li>`;
+            }
+            
+            // Botón siguiente
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+
+        /**
+         * Va a una página específica
+         */
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+            
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            displayResults();
+            updatePagination();
+        }
+
+        /**
+         * Cambia el número de resultados por página
+         */
+        function changeResultsPerPage() {
+            resultsPerPage = parseInt(document.getElementById('resultsPerPage').value);
+            currentPage = 1;
+            displayResults();
+            updatePagination();
+            updateResultsCount();
+        }
+
+        /**
+         * Actualiza contador de resultados
+         */
+        function updateResultsCount() {
+            const total = filteredResults.length;
+            const startIndex = (currentPage - 1) * resultsPerPage + 1;
+            const endIndex = Math.min(currentPage * resultsPerPage, total);
+            
+            document.getElementById('resultsCount').textContent = 
+                total > 0 ? `Mostrando ${startIndex}-${endIndex} de ${total} resultados` : 'No hay resultados';
+        }
+
+        /**
+         * Alterna selección de todos los resultados
+         */
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.result-checkbox');
+            
+            if (selectAllCheckbox.checked) {
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    selectedResults.add(cb.value);
+                });
+            } else {
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    selectedResults.delete(cb.value);
+                });
+            }
+            
+            updateBulkActions();
+        }
+
+        /**
+         * Actualiza acciones masivas
+         */
+        function updateBulkActions() {
+            const checkboxes = document.querySelectorAll('.result-checkbox:checked');
+            const hasSelection = checkboxes.length > 0;
+            
+            document.getElementById('bulkExportBtn').disabled = !hasSelection;
+            document.getElementById('bulkDeleteBtn').disabled = !hasSelection;
+            
+            // Actualizar conjunto de seleccionados
+            selectedResults.clear();
+            checkboxes.forEach(cb => selectedResults.add(cb.value));
+            
+            // Actualizar checkbox principal
+            const allCheckboxes = document.querySelectorAll('.result-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            
+            if (checkboxes.length === allCheckboxes.length && allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkboxes.length > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+
+        /**
+         * Ve detalles de un resultado
+         */
+        function viewResultDetail(resultId) {
+            const result = allResults.find(r => r.id === resultId);
+            if (!result) return;
+            
+            currentResultDetail = result;
+            
+            const modalContent = document.getElementById('modalDetailContent');
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="fw-bold">Información General</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td class="fw-semibold">Nombre:</td>
+                                <td>${escapeHtml(result.name)}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Tipo:</td>
+                                <td><span class="badge bg-${result.type === 'batch' ? 'warning' : 'primary'}">${result.type === 'batch' ? 'Masiva' : 'Individual'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Estado:</td>
+                                <td><span class="badge bg-${getStatusColor(result.status)}">${getStatusText(result.status)}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Fecha:</td>
+                                <td>${formatDateTime(result.date)}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Tiempo de Ejecución:</td>
+                                <td>${result.executionTime}s</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6 class="fw-bold">Resultados</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded mb-2">
+                                    <div class="h4 fw-bold text-success">${result.localMatches}</div>
+                                    <small class="text-muted">Locales</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded mb-2">
+                                    <div class="h4 fw-bold text-warning">${result.externalMatches}</div>
+                                    <small class="text-muted">Externos</small>
+                                </div>
+                            </div>
+                        </div>
+                        ${result.type === 'batch' ? `
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Se procesaron ${result.recordsProcessed} registros en total
+                                </small>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${result.status === 'completed' ? `
+                    <div class="mt-3">
+                        <h6 class="fw-bold">Detalles de Coincidencias</h6>
+                        <div class="alert alert-light">
+                            <p class="mb-0">Los resultados detallados estarían disponibles aquí en la implementación completa.</p>
+                            <small class="text-muted">Esto incluiría tablas con todas las coincidencias encontradas, niveles de similitud, fuentes, etc.</small>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('resultDetailModal'));
+            modal.show();
+        }
+
+        /**
+         * Acciones masivas
+         */
+        function bulkAction(action) {
+            const selectedIds = Array.from(selectedResults);
+            
+            if (selectedIds.length === 0) {
+                app.showToast('warning', 'Sin Selección', 'Selecciona al menos un resultado');
+                return;
+            }
+            
+            switch (action) {
+                case 'export':
+                    exportResults(selectedIds);
+                    break;
+                case 'delete':
+                    deleteResults(selectedIds);
+                    break;
+            }
+        }
+
+        /**
+         * Exporta resultados
+         */
+        function exportResults(ids) {
+            app.showToast('info', 'Exportando', `Exportando ${ids.length} resultado(s)...`);
+            
+            // En implementación real, generarías y descargarías el archivo
+            setTimeout(() => {
+                app.showToast('success', 'Exportado', 'Resultados exportados exitosamente');
+            }, 2000);
+        }
+
+        /**
+         * Elimina resultados
+         */
+        function deleteResults(ids) {
+            if (!confirm(`¿Estás seguro de que quieres eliminar ${ids.length} resultado(s)?`)) {
+                return;
+            }
+            
+            // En implementación real, llamarías a la API
+            allResults = allResults.filter(r => !ids.includes(r.id));
+            selectedResults.clear();
+            
+            updateOverviewStats();
+            applyFilters();
+            
+            app.showToast('success', 'Eliminado', `${ids.length} resultado(s) eliminado(s)`);
+        }
+
+        /**
+         * Exporta un resultado individual
+         */
+        function exportResult(resultId) {
+            exportResults([resultId]);
+        }
+
+        /**
+         * Elimina un resultado individual
+         */
+        function deleteResult(resultId) {
+            deleteResults([resultId]);
+        }
+
+        /**
+         * Exporta resultado desde el modal
+         */
+        function exportSingleResult() {
+            if (currentResultDetail) {
+                exportResult(currentResultDetail.id);
+            }
+        }
+
+        /**
+         * Repite búsqueda desde el modal
+         */
+        function repeatSearch() {
+            if (currentResultDetail) {
+                if (currentResultDetail.type === 'batch') {
+                    window.location.href = 'batch-search.html';
+                } else {
+                    window.location.href = 'search.html';
+                }
+            }
+        }
+
+        /**
+         * Refresca resultados
+         */
+        function refreshResults() {
+            app.showToast('info', 'Actualizando', 'Refrescando resultados...');
+            loadResults();
+        }
+
+        /**
+         * Exporta todos los resultados
+         */
+        function exportAllResults() {
+            const ids = filteredResults.map(r => r.id);
+            exportResults(ids);
+        }
+
+        /**
+         * Carga resultados de un batch específico
+         */
+        function loadBatchResults(batchId) {
+            // En implementación real, cargarías los resultados específicos del batch
+            app.showToast('info', 'Cargando', `Cargando resultados del lote ${batchId}`);
+        }
+
+        /**
+         * Muestra estado de error
+         */
+        function showErrorState() {
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+                        <h5 class="text-danger">Error Cargando Resultados</h5>
+                        <p class="text-muted">No se pudieron cargar los resultados. Intenta refrescar la página.</p>
+                        <button class="btn btn-primary" onclick="refreshResults()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reintentar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Funciones auxiliares
+        function getStatusColor(status) {
+            const colors = {
+                'completed': 'success',
+                'processing': 'warning',
+                'failed': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'completed': 'check-circle',
+                'processing': 'clock',
+                'failed': 'x-circle'
+            };
+            return icons[status] || 'question-circle';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'completed': 'Completado',
+                'processing': 'En Proceso',
+                'failed': 'Fallido'
+            };
+            return texts[status] || 'Desconocido';
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('es-ES');
+        }
+
+        function formatTime(dateString) {
+            return new Date(dateString).toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('es-ES');
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.toDateString() === date2.toDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

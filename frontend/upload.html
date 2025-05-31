@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargar Archivos - Sistema de Screening</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📤</text></svg>">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-search-heart me-2"></i>
+                Sistema Screening
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="upload.html">
+                            <i class="bi bi-cloud-upload me-1"></i>Cargar Archivos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="search.html">
+                            <i class="bi bi-search me-1"></i>Búsqueda Individual
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="batch-search.html">
+                            <i class="bi bi-stack me-1"></i>Búsqueda Masiva
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="results.html">
+                            <i class="bi bi-table me-1"></i>Resultados
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="h2 text-dark fw-bold">
+                    <i class="bi bi-cloud-upload me-2 text-primary"></i>
+                    Cargar Archivos Excel
+                </h1>
+                <p class="text-muted">Sube archivos Excel para crear bases de datos locales o preparar búsquedas masivas</p>
+            </div>
+        </div>
+
+        <!-- Upload Type Selection -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow-sm upload-type-card" data-type="local_database">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-database-fill display-4 text-success mb-3"></i>
+                        <h5 class="card-title">Base de Datos Local</h5>
+                        <p class="card-text text-muted">
+                            Subir archivo Excel para crear o ampliar la base de datos local de registros
+                        </p>
+                        <div class="form-check form-switch d-flex justify-content-center">
+                            <input class="form-check-input" type="radio" name="uploadType" id="typeLocal" value="local_database" checked>
+                            <label class="form-check-label ms-2" for="typeLocal">Seleccionar</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow-sm upload-type-card" data-type="search">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-search display-4 text-warning mb-3"></i>
+                        <h5 class="card-title">Archivo de Búsqueda</h5>
+                        <p class="card-text text-muted">
+                            Subir archivo Excel con registros para realizar búsquedas masivas
+                        </p>
+                        <div class="form-check form-switch d-flex justify-content-center">
+                            <input class="form-check-input" type="radio" name="uploadType" id="typeSearch" value="search">
+                            <label class="form-check-label ms-2" for="typeSearch">Seleccionar</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Area -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark-excel me-2"></i>
+                            Subir Archivo Excel
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Drag & Drop Zone -->
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-content">
+                                <i class="bi bi-cloud-upload drop-zone-icon"></i>
+                                <h4 class="mb-3">Arrastra tu archivo aquí</h4>
+                                <p class="text-muted mb-3">o haz clic para seleccionar un archivo</p>
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-folder2-open me-2"></i>
+                                    Seleccionar Archivo
+                                </button>
+                                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                            </div>
+                        </div>
+
+                        <!-- File Info -->
+                        <div id="fileInfo" class="mt-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="alert-heading mb-1">
+                                            <i class="bi bi-file-earmark-excel me-2"></i>
+                                            <span id="fileName">archivo.xlsx</span>
+                                        </h6>
+                                        <p class="mb-1">
+                                            <strong>Tamaño:</strong> <span id="fileSize">0 KB</span> |
+                                            <strong>Tipo:</strong> <span id="fileType">Excel</span>
+                                        </p>
+                                        <small class="text-muted" id="fileDescription">
+                                            El sistema detectará automáticamente las columnas de ID y Nombre
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-outline-danger btn-sm" onclick="clearFile()">
+                                            <i class="bi bi-x-circle me-1"></i>Remover
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div id="uploadProgress" class="mt-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">Subiendo archivo...</span>
+                                <span class="badge bg-primary" id="progressPercentage">0%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progressBar" 
+                                     style="width: 0%">
+                                </div>
+                            </div>
+                            <small class="text-muted mt-1" id="progressStatus">Iniciando subida...</small>
+                        </div>
+
+                        <!-- Processing Status -->
+                        <div id="processingStatus" class="mt-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm text-info me-3" role="status">
+                                        <span class="visually-hidden">Procesando...</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Procesando archivo...</h6>
+                                        <p class="mb-0" id="processingMessage">
+                                            Analizando estructura del archivo Excel
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Button -->
+                        <div class="d-grid mt-3">
+                            <button class="btn btn-success btn-lg" id="uploadBtn" disabled onclick="startUpload()">
+                                <i class="bi bi-cloud-upload me-2"></i>
+                                Subir y Procesar Archivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Configuration & Guidelines -->
+            <div class="col-lg-4">
+                <!-- Configuration Panel -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            Configuración
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="fileDescription" class="form-label">Descripción (opcional)</label>
+                            <input type="text" class="form-control" id="fileDescriptionInput" 
+                                   placeholder="Ej: Empleados Q1 2024">
+                        </div>
+                        
+                        <div class="mb-3" id="localDbConfig" style="display: none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="overwriteDuplicates">
+                                <label class="form-check-label" for="overwriteDuplicates">
+                                    Sobrescribir duplicados
+                                </label>
+                            </div>
+                            <small class="text-muted">Si está marcado, actualiza registros existentes</small>
+                        </div>
+                        
+                        <div class="mb-3" id="searchConfig" style="display: none;">
+                            <label class="form-label">Procesamiento</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="validateOnly">
+                                <label class="form-check-label" for="validateOnly">
+                                    Solo validar (no procesar)
+                                </label>
+                            </div>
+                            <small class="text-muted">Valida el archivo sin crear el lote</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guidelines -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Guía de Formatos
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-success">✅ Formatos Permitidos</h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-check text-success me-1"></i> Excel (.xlsx, .xls)</li>
+                                <li><i class="bi bi-check text-success me-1"></i> CSV (.csv)</li>
+                                <li><i class="bi bi-check text-success me-1"></i> Hasta 50MB</li>
+                                <li><i class="bi bi-check text-success me-1"></i> Máximo 10,000 registros</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-primary">📋 Columnas Requeridas</h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-person text-primary me-1"></i> <strong>Identificación:</strong> Cédula, RFC, etc.</li>
+                                <li><i class="bi bi-card-text text-primary me-1"></i> <strong>Nombre:</strong> Nombre completo</li>
+                                <li><i class="bi bi-info text-muted me-1"></i> Otras columnas son opcionales</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="alert alert-warning p-2">
+                            <small>
+                                <i class="bi bi-lightbulb me-1"></i>
+                                El sistema detecta automáticamente las columnas relevantes, 
+                                ignorando encabezados y campos innecesarios.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Uploads -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>
+                            Subidas Recientes
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="recentUploads" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center py-3 text-muted">
+                                <small>No hay subidas recientes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="uploadResults" class="row mt-4" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Archivo Procesado Exitosamente
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="processingResults">
+                                    <!-- Results will be inserted here -->
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="goToNextStep()">
+                                        <i class="bi bi-arrow-right me-2"></i>
+                                        <span id="nextStepText">Continuar</span>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="uploadAnother()">
+                                        <i class="bi bi-plus-circle me-2"></i>
+                                        Subir Otro Archivo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error de Procesamiento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="errorContent">
+                    <!-- Error details will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="contactSupport()">
+                        <i class="bi bi-headset me-1"></i>Contactar Soporte
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/upload.js"></script>
+
+    <script>
+        // Variables globales para upload
+        let selectedFile = null;
+        let uploadType = 'local_database';
+        let uploadInProgress = false;
+
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📤 Inicializando página de carga de archivos...');
+            
+            setupUploadPage();
+            setupDragAndDrop();
+            setupFileInput();
+            setupUploadTypeSelection();
+            loadRecentUploads();
+        });
+
+        /**
+         * Configura la página de upload
+         */
+        function setupUploadPage() {
+            // Eventos de tipo de upload
+            document.querySelectorAll('input[name="uploadType"]').forEach(radio => {
+                radio.addEventListener('change', handleUploadTypeChange);
+            });
+            
+            // Configurar cards clickeables
+            document.querySelectorAll('.upload-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const type = this.dataset.type;
+                    const radio = document.getElementById(type === 'local_database' ? 'typeLocal' : 'typeSearch');
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                });
+            });
+        }
+
+        /**
+         * Configura drag and drop
+         */
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            // Prevenir comportamientos por defecto
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            // Efectos visuales
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            // Manejar drop
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function highlight() {
+                dropZone.classList.add('dragover');
+            }
+            
+            function unhighlight() {
+                dropZone.classList.remove('dragover');
+            }
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    handleFileSelection(files[0]);
+                }
+            }
+        }
+
+        /**
+         * Configura input de archivo
+         */
+        function setupFileInput() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+        }
+
+        /**
+         * Maneja selección de archivo
+         */
+        function handleFileSelection(file) {
+            if (uploadInProgress) {
+                app.showToast('warning', 'Subida en Progreso', 'Ya hay una subida en proceso');
+                return;
+            }
+            
+            // Validar archivo
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                app.showToast('error', 'Archivo No Válido', validation.errors.join('<br>'));
+                return;
+            }
+            
+            selectedFile = file;
+            displayFileInfo(file);
+            
+            // Habilitar botón de upload
+            document.getElementById('uploadBtn').disabled = false;
+        }
+
+        /**
+         * Valida archivo seleccionado
+         */
+        function validateFile(file) {
+            const errors = [];
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                                'application/vnd.ms-excel', 'text/csv'];
+            const allowedExtensions = ['xlsx', 'xls', 'csv'];
+            
+            // Validar tamaño
+            if (file.size > maxSize) {
+                errors.push('El archivo excede el tamaño máximo de 50MB');
+            }
+            
+            // Validar extensión
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(extension)) {
+                errors.push('Tipo de archivo no permitido. Use: .xlsx, .xls, .csv');
+            }
+            
+            return {
+                valid: errors.length === 0,
+                errors: errors
+            };
+        }
+
+        /**
+         * Muestra información del archivo
+         */
+        function displayFileInfo(file) {
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const fileType = document.getElementById('fileType');
+            const fileDescription = document.getElementById('fileDescription');
+            
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileType.textContent = getFileTypeDisplay(file);
+            fileDescription.textContent = getUploadTypeDescription();
+            
+            fileInfo.style.display = 'block';
+        }
+
+        /**
+         * Obtiene descripción del tipo de archivo
+         */
+        function getFileTypeDisplay(file) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            const types = {
+                'xlsx': 'Excel 2007+',
+                'xls': 'Excel 97-2003',
+                'csv': 'CSV'
+            };
+            return types[extension] || 'Desconocido';
+        }
+
+        /**
+         * Obtiene descripción del tipo de upload
+         */
+        function getUploadTypeDescription() {
+            if (uploadType === 'local_database') {
+                return 'Se agregará a la base de datos local para búsquedas';
+            } else {
+                return 'Se preparará para búsquedas masivas';
+            }
+        }
+
+        /**
+         * Formatea tamaño de archivo
+         */
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        /**
+         * Maneja cambio de tipo de upload
+         */
+        function handleUploadTypeChange(e) {
+            uploadType = e.target.value;
+            
+            // Actualizar configuración visible
+            document.getElementById('localDbConfig').style.display = 
+                uploadType === 'local_database' ? 'block' : 'none';
+            document.getElementById('searchConfig').style.display = 
+                uploadType === 'search' ? 'block' : 'none';
+            
+            // Actualizar cards visuales
+            document.querySelectorAll('.upload-type-card').forEach(card => {
+                if (card.dataset.type === uploadType) {
+                    card.style.borderColor = '#0d6efd';
+                    card.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+                } else {
+                    card.style.borderColor = '#e9ecef';
+                    card.style.backgroundColor = 'white';
+                }
+            });
+            
+            // Actualizar descripción si hay archivo seleccionado
+            if (selectedFile) {
+                document.getElementById('fileDescription').textContent = getUploadTypeDescription();
+            }
+        }
+
+        /**
+         * Inicia la subida del archivo
+         */
+        async function startUpload() {
+            if (!selectedFile || uploadInProgress) {
+                return;
+            }
+            
+            uploadInProgress = true;
+            
+            try {
+                // Mostrar progreso
+                showUploadProgress();
+                
+                // Crear FormData
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('upload_type', uploadType);
+                formData.append('description', document.getElementById('fileDescriptionInput').value);
+                
+                if (uploadType === 'local_database') {
+                    formData.append('overwrite_duplicates', document.getElementById('overwriteDuplicates').checked);
+                } else {
+                    formData.append('validate_only', document.getElementById('validateOnly').checked);
+                }
+                
+                // Realizar upload con progreso
+                const result = await uploadWithProgress(formData);
+                
+                // Mostrar resultados
+                showUploadResults(result);
+                
+                // Guardar en historial
+                saveToUploadHistory(result);
+                
+            } catch (error) {
+                console.error('Error en upload:', error);
+                showUploadError(error);
+            } finally {
+                uploadInProgress = false;
+                hideUploadProgress();
+            }
+        }
+
+        /**
+         * Sube archivo con barra de progreso
+         */
+        function uploadWithProgress(formData) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                // Progreso de subida
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        updateUploadProgress(percentComplete, 'Subiendo archivo...');
+                    }
+                });
+                
+                // Respuesta completa
+                xhr.addEventListener('load', function() {
+                    if (xhr.status === 200) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.success) {
+                                resolve(response);
+                            } else {
+                                reject(new Error(response.error || 'Error desconocido'));
+                            }
+                        } catch (e) {
+                            reject(new Error('Error procesando respuesta del servidor'));
+                        }
+                    } else {
+                        reject(new Error(`Error HTTP ${xhr.status}: ${xhr.statusText}`));
+                    }
+                });
+                
+                // Error de red
+                xhr.addEventListener('error', function() {
+                    reject(new Error('Error de conexión'));
+                });
+                
+                // Enviar petición
+                xhr.open('POST', '../backend/api/upload.php');
+                xhr.send(formData);
+            });
+        }
+
+        /**
+         * Muestra progreso de subida
+         */
+        function showUploadProgress() {
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('uploadBtn').disabled = true;
+            updateUploadProgress(0, 'Iniciando subida...');
+        }
+
+        /**
+         * Actualiza progreso de subida
+         */
+        function updateUploadProgress(percent, status) {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressStatus = document.getElementById('progressStatus');
+            
+            progressBar.style.width = percent + '%';
+            progressPercentage.textContent = Math.round(percent) + '%';
+            progressStatus.textContent = status;
+            
+            if (percent === 100) {
+                // Mostrar procesamiento
+                setTimeout(() => {
+                    document.getElementById('processingStatus').style.display = 'block';
+                }, 500);
+            }
+        }
+
+        /**
+         * Oculta progreso de subida
+         */
+        function hideUploadProgress() {
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('processingStatus').style.display = 'none';
+            document.getElementById('uploadBtn').disabled = false;
+        }
+
+        /**
+         * Muestra resultados de upload
+         */
+        function showUploadResults(result) {
+            const resultsContainer = document.getElementById('processingResults');
+            const nextStepText = document.getElementById('nextStepText');
+            
+            let html = `
+                <h6 class="fw-bold text-success mb-3">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Procesamiento Completado
+                </h6>
+            `;
+            
+            if (result.processing_result) {
+                const data = result.processing_result.data;
+                
+                if (uploadType === 'local_database') {
+                    html += `
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded">
+                                    <div class="h5 fw-bold text-success">${data.saved || 0}</div>
+                                    <small class="text-muted">Registros Guardados</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded">
+                                    <div class="h5 fw-bold text-warning">${data.duplicates || 0}</div>
+                                    <small class="text-muted">Duplicados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Los registros han sido agregados a la base de datos local y están disponibles para búsquedas.
+                        </p>
+                    `;
+                    nextStepText.textContent = 'Realizar Búsqueda';
+                } else {
+                    html += `
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded">
+                                    <div class="h5 fw-bold text-primary">${data.total_records || 0}</div>
+                                    <small class="text-muted">Registros Válidos</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded">
+                                    <div class="h5 fw-bold text-info">${result.file_stats?.total_rows || 0}</div>
+                                    <small class="text-muted">Filas Procesadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            El archivo está listo para crear un lote de búsqueda masiva.
+                        </p>
+                    `;
+                    nextStepText.textContent = 'Crear Lote de Búsqueda';
+                }
+            }
+            
+            html += `
+                <div class="alert alert-light border">
+                    <strong>Archivo:</strong> ${result.file_info.original_name}<br>
+                    <strong>Tamaño:</strong> ${result.file_info.size_mb} MB<br>
+                    <strong>Tipo:</strong> ${result.file_info.type === 'local_database' ? 'Base de Datos Local' : 'Archivo de Búsqueda'}
+                </div>
+            `;
+            
+            resultsContainer.innerHTML = html;
+            document.getElementById('uploadResults').style.display = 'block';
+            
+            // Scroll a resultados
+            document.getElementById('uploadResults').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Muestra error de upload
+         */
+        function showUploadError(error) {
+            const errorContent = document.getElementById('errorContent');
+            
+            errorContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error de Procesamiento
+                    </h6>
+                    <p class="mb-2">${error.message}</p>
+                    <hr>
+                    <div class="mb-0">
+                        <strong>Posibles soluciones:</strong>
+                        <ul class="mt-2">
+                            <li>Verificar que el archivo tenga las columnas requeridas</li>
+                            <li>Asegurar que el archivo no esté corrupto</li>
+                            <li>Intentar con un archivo más pequeño</li>
+                            <li>Verificar la conexión a internet</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }
+
+        /**
+         * Limpia archivo seleccionado
+         */
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadBtn').disabled = true;
+            
+            // Limpiar resultados anteriores
+            document.getElementById('uploadResults').style.display = 'none';
+            hideUploadProgress();
+        }
+
+        /**
+         * Va al siguiente paso según el tipo de upload
+         */
+        function goToNextStep() {
+            if (uploadType === 'local_database') {
+                window.location.href = 'search.html';
+            } else {
+                window.location.href = 'batch-search.html';
+            }
+        }
+
+        /**
+         * Sube otro archivo
+         */
+        function uploadAnother() {
+            clearFile();
+            document.getElementById('uploadResults').style.display = 'none';
+        }
+
+        /**
+         * Contacta soporte
+         */
+        function contactSupport() {
+            app.showToast('info', 'Contactar Soporte', 'Función de soporte en desarrollo');
+        }
+
+        /**
+         * Carga historial de subidas
+         */
+        function loadRecentUploads() {
+            const history = JSON.parse(localStorage.getItem('upload_history') || '[]');
+            displayRecentUploads(history.slice(0, 5));
+        }
+
+        /**
+         * Muestra historial de subidas
+         */
+        function displayRecentUploads(uploads) {
+            const container = document.getElementById('recentUploads');
+            
+            if (uploads.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3 text-muted">
+                        <small>No hay subidas recientes</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = uploads.map(upload => `
+                <div class="p-2 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold small">${escapeHtml(upload.filename)}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                ${upload.type === 'local_database' ? 'Base Local' : 'Búsqueda'} • 
+                                ${upload.records} registros
+                            </div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                ${getTimeAgo(upload.timestamp)}
+                            </div>
+                        </div>
+                        <span class="badge bg-${upload.type === 'local_database' ? 'success' : 'warning'}">${upload.status}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        /**
+         * Guarda upload en historial
+         */
+        function saveToUploadHistory(result) {
+            const history = JSON.parse(localStorage.getItem('upload_history') || '[]');
+            
+            const newEntry = {
+                filename: result.file_info.original_name,
+                type: result.file_info.type,
+                records: result.processing_result?.data?.saved || result.processing_result?.data?.total_records || 0,
+                status: 'Completado',
+                timestamp: Date.now()
+            };
+            
+            history.unshift(newEntry);
+            history.splice(10); // Mantener solo 10
+            
+            localStorage.setItem('upload_history', JSON.stringify(history));
+            loadRecentUploads();
+        }
+
+        /**
+         * Calcula tiempo transcurrido
+         */
+        function getTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
+            if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (minutes > 0) return `hace ${minutes} min`;
+            return 'hace un momento';
+        }
+
+        /**
+         * Escapa HTML
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
