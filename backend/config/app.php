@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuración General de la Aplicación
  * Sistema de Screening de Contratación
@@ -24,7 +25,7 @@ return [
     'url' => $_ENV['APP_URL'] ?? 'http://localhost',
     'timezone' => 'America/Mexico_City',
     'locale' => 'es_MX',
-    
+
     // Configuración de directorios
     'paths' => [
         'root' => dirname(__DIR__, 2),
@@ -37,7 +38,7 @@ return [
         'config' => __DIR__,
         'database' => dirname(__DIR__, 2) . '/database',
     ],
-    
+
     // Configuración de archivos y uploads
     'files' => [
         'max_size_mb' => (int)($_ENV['MAX_FILE_SIZE_MB'] ?? 50),
@@ -47,7 +48,7 @@ return [
         'local_db_dir' => $_ENV['LOCAL_DB_DIR'] ?? 'uploads/local_databases/',
         'search_files_dir' => $_ENV['SEARCH_FILES_DIR'] ?? 'uploads/search_files/',
     ],
-    
+
     // Configuración de búsquedas y procesamiento
     'search' => [
         'max_batch_size' => (int)($_ENV['MAX_BATCH_SIZE'] ?? 500),
@@ -61,7 +62,7 @@ return [
             'max_threshold' => (float)($_ENV['MAX_SIMILARITY_THRESHOLD'] ?? 100.0),
         ],
     ],
-    
+
     // Configuración de scrapers
     'scrapers' => [
         'retry_attempts' => (int)($_ENV['SCRAPER_RETRY_ATTEMPTS'] ?? 3),
@@ -69,11 +70,11 @@ return [
         'user_agent' => $_ENV['SCRAPER_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'timeout_ms' => (int)($_ENV['SCRAPER_TIMEOUT_MS'] ?? 30000),
         'debug' => filter_var($_ENV['SCRAPER_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
-        
+
         // Configuración Node.js
         'node_path' => $_ENV['NODE_PATH'] ?? 'node',
         'npm_path' => $_ENV['NPM_PATH'] ?? 'npm',
-        
+
         // Configuración Puppeteer
         'puppeteer' => [
             'headless' => filter_var($_ENV['PUPPETEER_HEADLESS'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -83,7 +84,7 @@ return [
                 'height' => (int)($_ENV['PUPPETEER_VIEWPORT_HEIGHT'] ?? 1080),
             ],
         ],
-        
+
         // Configuración de proxy
         'proxy' => [
             'enabled' => filter_var($_ENV['USE_PROXY'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -93,7 +94,7 @@ return [
             'password' => $_ENV['PROXY_PASSWORD'] ?? '',
         ],
     ],
-    
+
     // Configuración de logging
     'logging' => [
         'level' => $_ENV['LOG_LEVEL'] ?? 'INFO',
@@ -108,7 +109,7 @@ return [
             'max_files' => (int)($_ENV['LOG_MAX_FILES'] ?? 10),
         ],
     ],
-    
+
     // Configuración de notificaciones
     'notifications' => [
         'enabled' => filter_var($_ENV['NOTIFICATIONS_ENABLED'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -116,7 +117,7 @@ return [
         'max_stack' => (int)($_ENV['NOTIFICATION_MAX_STACK'] ?? 10),
         'progress_update_interval_ms' => (int)($_ENV['PROGRESS_UPDATE_INTERVAL_MS'] ?? 1000),
     ],
-    
+
     // Configuración de seguridad
     'security' => [
         'app_key' => $_ENV['APP_KEY'] ?? 'tu_clave_secreta_aqui_32_caracteres',
@@ -131,14 +132,14 @@ return [
             'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With'),
         ],
     ],
-    
+
     // Configuración de cache
     'cache' => [
         'enabled' => filter_var($_ENV['CACHE_ENABLED'] ?? true, FILTER_VALIDATE_BOOLEAN),
         'ttl_seconds' => (int)($_ENV['CACHE_TTL_SECONDS'] ?? 3600),
         'prefix' => 'screening_app_',
     ],
-    
+
     // Configuración de APIs externas
     'external_apis' => [
         'ofac' => [
@@ -156,7 +157,7 @@ return [
             'search_url' => $_ENV['GOOGLE_SEARCH_URL'] ?? 'https://www.google.com.mx/search?q=',
         ],
     ],
-    
+
     // URLs de sitios externos configurables
     'sites' => [
         'government' => [
@@ -191,14 +192,14 @@ return [
             '24_horas' => $_ENV['24_HORAS_URL'] ?? 'https://www.24-horas.mx/',
         ],
     ],
-    
+
     // Configuración de desarrollo y testing
     'development' => [
         'api_debug' => filter_var($_ENV['API_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
         'testing_enabled' => filter_var($_ENV['TESTING_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN),
         'test_database' => $_ENV['TEST_DATABASE'] ?? 'screening_contratacion_test',
     ],
-    
+
     // Configuración de producción
     'production' => [
         'opcache_enabled' => filter_var($_ENV['OPCACHE_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -207,7 +208,7 @@ return [
         'minify_js' => filter_var($_ENV['MINIFY_JS'] ?? false, FILTER_VALIDATE_BOOLEAN),
         'metrics_enabled' => filter_var($_ENV['METRICS_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
-    
+
     // Configuración de health check y monitoreo
     'monitoring' => [
         'health_check_enabled' => filter_var($_ENV['HEALTH_CHECK_ENABLED'] ?? true, FILTER_VALIDATE_BOOLEAN),

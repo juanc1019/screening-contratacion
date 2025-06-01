@@ -41,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
     $db = Database::getInstance();
     $queueManager = new QueueManager();
-    
+
     $action = $_GET['action'] ?? 'batch_progress';
-    
+
     if ($isSSE) {
         // Monitoreo continuo con Server-Sent Events
         handleSSEProgress($action, $db, $queueManager);
@@ -52,10 +52,9 @@ try {
         $result = handleSingleProgress($action, $db, $queueManager);
         echo json_encode($result);
     }
-    
 } catch (Exception $e) {
     error_log("Error en progress.php: " . $e->getMessage());
-    
+
     if ($isSSE) {
         echo "event: error\n";
         echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
@@ -78,17 +77,17 @@ function handleSSEProgress(string $action, Database $db, QueueManager $queueMana
     // Configurar timeout y límites
     set_time_limit(0);
     ignore_user_abort(false);
-    
+
     $batchId = $_GET['batch_id'] ?? null;
     $jobId = $_GET['job_id'] ?? null;
     $interval = max(1, (int)($_GET['interval'] ?? 2)); // Segundos entre actualizaciones
-    
+
     $startTime = time();
     $maxDuration = 300; // 5 minutos máximo
-    
+
     while (time() - $startTime < $maxDuration && connection_status() === CONNECTION_NORMAL) {
         $data = [];
-        
+
         try {
             switch ($action) {
                 case 'batch_progress':
@@ -96,31 +95,31 @@ function handleSSEProgress(string $action, Database $db, QueueManager $queueMana
                         $data = getBatchProgressData($batchId, $db);
                     }
                     break;
-                    
+
                 case 'job_progress':
                     if ($jobId) {
                         $data = getJobProgressData($jobId, $queueManager);
                     }
                     break;
-                    
+
                 case 'queue_status':
                     $data = getQueueStatusData($queueManager);
                     break;
-                    
+
                 case 'system_status':
                     $data = getSystemStatusData($db, $queueManager);
                     break;
             }
-            
+
             // Enviar datos
             echo "event: progress\n";
             echo "data: " . json_encode(array_merge($data, [
                 'timestamp' => date('Y-m-d H:i:s'),
                 'server_time' => time()
             ])) . "\n\n";
-            
+
             flush();
-            
+
             // Verificar si el proceso está completo
             if (isset($data['completed']) && $data['completed']) {
                 echo "event: complete\n";
@@ -128,16 +127,15 @@ function handleSSEProgress(string $action, Database $db, QueueManager $queueMana
                 flush();
                 break;
             }
-            
         } catch (Exception $e) {
             echo "event: error\n";
             echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
             flush();
         }
-        
+
         sleep($interval);
     }
-    
+
     // Enviar evento de cierre
     echo "event: close\n";
     echo "data: " . json_encode(['message' => 'Stream cerrado']) . "\n\n";
@@ -146,6 +144,7 @@ function handleSSEProgress(string $action, Database $db, QueueManager $queueMana
 
 /**
  * Maneja respuesta única de progreso
+ * @return array<string, mixed>
  */
 function handleSingleProgress(string $action, Database $db, QueueManager $queueManager): array
 {
@@ -156,28 +155,28 @@ function handleSingleProgress(string $action, Database $db, QueueManager $queueM
                 throw new Exception('batch_id requerido');
             }
             return getBatchProgressData($batchId, $db);
-            
+
         case 'job_progress':
             $jobId = $_GET['job_id'] ?? null;
             if (!$jobId) {
                 throw new Exception('job_id requerido');
             }
             return getJobProgressData($jobId, $queueManager);
-            
+
         case 'queue_status':
             return getQueueStatusData($queueManager);
-            
+
         case 'system_status':
             return getSystemStatusData($db, $queueManager);
-            
+
         case 'notifications':
             $limit = (int)($_GET['limit'] ?? 10);
             return getNotificationsData($db, $limit);
-            
+
         case 'recent_activity':
             $limit = (int)($_GET['limit'] ?? 20);
             return getRecentActivityData($db, $limit);
-            
+
         default:
             throw new Exception('Acción no válida');
     }
@@ -185,15 +184,16 @@ function handleSingleProgress(string $action, Database $db, QueueManager $queueM
 
 /**
  * Obtiene datos de progreso de un lote
+ * @return array<string, mixed>
  */
 function getBatchProgressData(string $batchId, Database $db): array
 {
     $progress = $db->getBatchProgress($batchId);
-    
+
     if (empty($progress)) {
         throw new Exception('Lote no encontrado');
     }
-    
+
     // Obtener detalles adicionales
     $sql = "SELECT 
                 COUNT(*) as total,
@@ -203,32 +203,41 @@ function getBatchProgressData(string $batchId, Database $db): array
                 COUNT(*) FILTER (WHERE status = 'error') as errors
             FROM bulk_searches 
             WHERE batch_id = ?";
-    
+
     $stmt = $db->query($sql, [$batchId]);
-    $statusCounts = $stmt->fetch();
-    
+    /** @var array<string, int|string|null>|false $statusCounts */
+    $statusCounts = $stmt->fetch(PDO::FETCH_ASSOC);
+
     // Estadísticas de resultados
+    /** @var array<int, array<string, mixed>> $resultStats */
     $resultStats = $db->getSearchResultsSummary($batchId);
-    
+
     $localMatches = 0;
     $externalMatches = 0;
     foreach ($resultStats as $result) {
-        $localMatches += $result['local_matches'] ?? 0;
-        $externalMatches += $result['external_matches'] ?? 0;
+        $localMatches += (int)($result['local_matches'] ?? 0);
+        $externalMatches += (int)($result['external_matches'] ?? 0);
     }
-    
+
+    $totalRecordsWithResults = 0;
+    foreach ($resultStats as $r) {
+        if (((int)($r['local_matches'] ?? 0) + (int)($r['external_matches'] ?? 0)) > 0) {
+            $totalRecordsWithResults++;
+        }
+    }
+
     return [
         'success' => true,
         'batch_id' => $batchId,
         'batch_info' => $progress,
-        'progress_percentage' => (float)$progress['progress_percentage'],
-        'status_counts' => $statusCounts,
+        'progress_percentage' => (float)($progress['progress_percentage'] ?? 0.0),
+        'status_counts' => $statusCounts ?: [],
         'results_summary' => [
             'total_local_matches' => $localMatches,
             'total_external_matches' => $externalMatches,
-            'records_with_results' => count(array_filter($resultStats, fn($r) => ($r['local_matches'] + $r['external_matches']) > 0))
+            'records_with_results' => $totalRecordsWithResults
         ],
-        'completed' => $progress['status'] === 'completed',
+        'completed' => ($progress['status'] ?? 'unknown') === 'completed',
         'estimated_remaining_time' => estimateRemainingTime($progress),
         'current_phase' => getCurrentPhase($progress)
     ];
@@ -236,55 +245,63 @@ function getBatchProgressData(string $batchId, Database $db): array
 
 /**
  * Obtiene datos de progreso de un trabajo
+ * @return array<string, mixed>
  */
 function getJobProgressData(string $jobId, QueueManager $queueManager): array
 {
     $job = $queueManager->getJobStatus($jobId);
-    
+
     if (!$job) {
         throw new Exception('Trabajo no encontrado');
     }
-    
-    $executionTime = 0;
-    if ($job['started_at']) {
+
+    $executionTime = 0.0;
+    if (!empty($job['started_at'])) {
+        /** @var float $startTime */
+        $startTime = $job['started_at'];
+        /** @var float $endTime */
         $endTime = $job['completed_at'] ?? microtime(true);
-        $executionTime = ($endTime - $job['started_at']) * 1000; // en ms
+        $executionTime = ($endTime - $startTime) * 1000; // en ms
     }
-    
+
     return [
         'success' => true,
         'job_id' => $jobId,
         'job_info' => $job,
-        'progress_percentage' => $job['progress'],
+        'progress_percentage' => (float)($job['progress'] ?? 0.0),
         'execution_time_ms' => round($executionTime, 2),
-        'completed' => in_array($job['status'], ['completed', 'failed', 'cancelled']),
+        'completed' => in_array(($job['status'] ?? 'unknown'), ['completed', 'failed', 'cancelled']),
         'estimated_remaining_time' => estimateJobRemainingTime($job)
     ];
 }
 
 /**
  * Obtiene estado de la cola
+ * @return array<string, mixed>
  */
 function getQueueStatusData(QueueManager $queueManager): array
 {
     $stats = $queueManager->getQueueStats();
+    /** @var array<int, array<string, mixed>> $activeJobs */
     $activeJobs = $queueManager->getActiveJobs();
-    
+
     // Obtener trabajos por tipo
+    /** @var array<string, array<string, int>> $jobsByType */
     $jobsByType = [];
     foreach ($activeJobs as $job) {
+        /** @var string $type */
         $type = $job['type'];
         if (!isset($jobsByType[$type])) {
             $jobsByType[$type] = ['total' => 0, 'running' => 0, 'queued' => 0];
         }
         $jobsByType[$type]['total']++;
-        if ($job['status'] === 'running') {
+        if (($job['status'] ?? 'unknown') === 'running') {
             $jobsByType[$type]['running']++;
-        } elseif ($job['status'] === 'queued') {
+        } elseif (($job['status'] ?? 'unknown') === 'queued') {
             $jobsByType[$type]['queued']++;
         }
     }
-    
+
     return [
         'success' => true,
         'queue_stats' => $stats,
@@ -296,17 +313,21 @@ function getQueueStatusData(QueueManager $queueManager): array
 
 /**
  * Obtiene estado general del sistema
+ * @return array<string, mixed>
  */
 function getSystemStatusData(Database $db, QueueManager $queueManager): array
 {
+    /** @var array<string, mixed> $dbHealth */
     $dbHealth = $db->healthCheck();
+    /** @var array<string, mixed> $queueHealth */
     $queueHealth = $queueManager->healthCheck();
+    /** @var array<string, mixed> $systemStats */
     $systemStats = $db->getSystemStats();
-    
+
     // Calcular uso de memoria y CPU (básico)
     $memoryUsage = memory_get_usage(true);
     $memoryPeak = memory_get_peak_usage(true);
-    
+
     return [
         'success' => true,
         'database' => $dbHealth,
@@ -315,7 +336,7 @@ function getSystemStatusData(Database $db, QueueManager $queueManager): array
         'performance' => [
             'memory_usage_mb' => round($memoryUsage / (1024 * 1024), 2),
             'memory_peak_mb' => round($memoryPeak / (1024 * 1024), 2),
-            'uptime_seconds' => time() - $_SERVER['REQUEST_TIME'],
+            'uptime_seconds' => time() - (int)($_SERVER['REQUEST_TIME_FLOAT'] ?? $_SERVER['REQUEST_TIME']),
             'php_version' => PHP_VERSION
         ],
         'overall_status' => determineOverallStatus($dbHealth, $queueHealth)
@@ -324,11 +345,13 @@ function getSystemStatusData(Database $db, QueueManager $queueManager): array
 
 /**
  * Obtiene notificaciones recientes
+ * @return array<string, mixed>
  */
 function getNotificationsData(Database $db, int $limit): array
 {
+    /** @var array<int, array<string, mixed>> $notifications */
     $notifications = $db->getUnreadNotifications();
-    
+
     return [
         'success' => true,
         'notifications' => array_slice($notifications, 0, $limit),
@@ -338,6 +361,7 @@ function getNotificationsData(Database $db, int $limit): array
 
 /**
  * Obtiene actividad reciente del sistema
+ * @return array<string, mixed>
  */
 function getRecentActivityData(Database $db, int $limit): array
 {
@@ -346,10 +370,11 @@ function getRecentActivityData(Database $db, int $limit): array
             WHERE log_level IN ('INFO', 'WARNING', 'ERROR')
             ORDER BY created_at DESC 
             LIMIT ?";
-    
+
     $stmt = $db->query($sql, [$limit]);
-    $logs = $stmt->fetchAll();
-    
+    /** @var array<int, array<string, mixed>> $logs */
+    $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     return [
         'success' => true,
         'recent_activity' => $logs,
@@ -359,25 +384,33 @@ function getRecentActivityData(Database $db, int $limit): array
 
 /**
  * Estima tiempo restante para un lote
+ * @param array<string, mixed> $progress
  */
 function estimateRemainingTime(array $progress): string
 {
-    if ($progress['status'] === 'completed') {
+    if (($progress['status'] ?? 'unknown') === 'completed') {
         return 'Completado';
     }
-    
-    $totalRecords = (int)$progress['total_records'];
-    $processedRecords = (int)$progress['processed_records'];
-    $progressPercentage = (float)$progress['progress_percentage'];
-    
-    if ($processedRecords === 0 || $progressPercentage === 0) {
+
+    $totalRecords = (int)($progress['total_records'] ?? 0);
+    $processedRecords = (int)($progress['processed_records'] ?? 0);
+    $progressPercentage = (float)($progress['progress_percentage'] ?? 0.0);
+
+    if ($processedRecords === 0 || abs($progressPercentage) < 0.00001) {
         return 'Calculando...';
     }
-    
-    $elapsedTime = time() - strtotime($progress['started_at'] ?? $progress['created_at']);
+
+    /** @var string|int $startTimeString */
+    $startTimeString = $progress['started_at'] ?? $progress['created_at'] ?? time();
+    $startTime = is_numeric($startTimeString) ? (int)$startTimeString : strtotime((string)$startTimeString);
+    if ($startTime === false) {
+        $startTime = time(); // Fallback if strtotime fails
+    }
+
+    $elapsedTime = time() - $startTime;
     $estimatedTotalTime = ($elapsedTime / $progressPercentage) * 100;
-    $remainingTime = max(0, $estimatedTotalTime - $elapsedTime);
-    
+    $remainingTime = max(0.0, $estimatedTotalTime - $elapsedTime);
+
     if ($remainingTime < 60) {
         return round($remainingTime) . ' segundos';
     } elseif ($remainingTime < 3600) {
@@ -389,21 +422,26 @@ function estimateRemainingTime(array $progress): string
 
 /**
  * Estima tiempo restante para un trabajo
+ * @param array<string, mixed> $job
  */
 function estimateJobRemainingTime(array $job): string
 {
-    if (in_array($job['status'], ['completed', 'failed', 'cancelled'])) {
+    if (in_array(($job['status'] ?? 'unknown'), ['completed', 'failed', 'cancelled'])) {
         return 'Terminado';
     }
-    
-    if ($job['progress'] === 0 || !$job['started_at']) {
+
+    $progress = (float)($job['progress'] ?? 0.0);
+    /** @var float|null $startedAt */
+    $startedAt = $job['started_at'] ?? null;
+
+    if (abs($progress) < 0.00001 || $startedAt === null) {
         return 'Calculando...';
     }
-    
-    $elapsedTime = microtime(true) - $job['started_at'];
-    $estimatedTotalTime = ($elapsedTime / $job['progress']) * 100;
-    $remainingTime = max(0, $estimatedTotalTime - $elapsedTime);
-    
+
+    $elapsedTime = microtime(true) - $startedAt;
+    $estimatedTotalTime = ($elapsedTime / $progress) * 100;
+    $remainingTime = max(0.0, $estimatedTotalTime - $elapsedTime);
+
     if ($remainingTime < 60) {
         return round($remainingTime) . ' segundos';
     } else {
@@ -413,18 +451,19 @@ function estimateJobRemainingTime(array $job): string
 
 /**
  * Obtiene la fase actual de procesamiento
+ * @param array<string, mixed> $progress
  */
 function getCurrentPhase(array $progress): string
 {
-    $percentage = (float)$progress['progress_percentage'];
-    
-    if ($percentage === 0) {
+    $percentage = (float)($progress['progress_percentage'] ?? 0.0);
+
+    if (abs($percentage) < 0.00001) { // Check against a small epsilon instead of === 0 for float
         return 'Iniciando';
-    } elseif ($percentage < 50) {
+    } elseif ($percentage < 50.0) {
         return 'Búsqueda local';
-    } elseif ($percentage < 90) {
+    } elseif ($percentage < 90.0) {
         return 'Búsqueda externa';
-    } elseif ($percentage < 100) {
+    } elseif ($percentage < 100.0) {
         return 'Finalizando';
     } else {
         return 'Completado';
@@ -433,20 +472,22 @@ function getCurrentPhase(array $progress): string
 
 /**
  * Determina el estado general del sistema
+ * @param array<string, mixed> $dbHealth
+ * @param array<string, mixed> $queueHealth
  */
 function determineOverallStatus(array $dbHealth, array $queueHealth): string
 {
-    if ($dbHealth['status'] === 'unhealthy') {
+    if (($dbHealth['status'] ?? 'unknown') === 'unhealthy') {
         return 'critical';
     }
-    
-    if ($queueHealth['status'] === 'critical') {
+
+    if (($queueHealth['status'] ?? 'unknown') === 'critical') {
         return 'critical';
     }
-    
-    if ($dbHealth['status'] === 'healthy' && $queueHealth['status'] === 'healthy') {
+
+    if (($dbHealth['status'] ?? 'unknown') === 'healthy' && ($queueHealth['status'] ?? 'unknown') === 'healthy') {
         return 'healthy';
     }
-    
+
     return 'warning';
 }
