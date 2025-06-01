@@ -16,12 +16,12 @@ class Database
 {
     private static ?Database $instance = null;
     private ?PDO $connection = null;
+    /** @var array<string, mixed> */
     private array $config;
     private Logger $logger;
-    private array $queryCache = [];
     private int $queryCount = 0;
     private float $totalQueryTime = 0.0;
-    
+
     /**
      * Destructor - cierra la conexión automáticamente
      */
@@ -29,12 +29,14 @@ class Database
     {
         $this->close();
     }
-    
+
     /**
      * Previene la clonación del objeto Singleton
      */
-    private function __clone() {}
-    
+    private function __clone()
+    {
+    }
+
     /**
      * Previene la deserialización del objeto Singleton
      */
@@ -42,7 +44,8 @@ class Database
     {
         throw new Exception("No se puede deserializar un singleton.");
     }
-}
+
+    /**
      * Constructor privado para patrón Singleton
      */
     private function __construct()
@@ -51,7 +54,7 @@ class Database
         $this->setupLogger();
         $this->connect();
     }
-    
+
     /**
      * Obtiene la instancia única de Database
      */
@@ -62,7 +65,7 @@ class Database
         }
         return self::$instance;
     }
-    
+
     /**
      * Configura el logger para la base de datos
      */
@@ -72,7 +75,7 @@ class Database
         $logFile = $this->config['logging']['log_file'] ?? 'logs/database.log';
         $this->logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
     }
-    
+
     /**
      * Establece la conexión a PostgreSQL
      */
@@ -80,7 +83,7 @@ class Database
     {
         try {
             $dbConfig = $this->config['connections']['pgsql'];
-            
+
             $dsn = sprintf(
                 'pgsql:host=%s;port=%s;dbname=%s;options=--search_path=%s',
                 $dbConfig['host'],
@@ -88,40 +91,47 @@ class Database
                 $dbConfig['database'],
                 $dbConfig['search_path']
             );
-            
+
             $this->connection = new PDO(
                 $dsn,
                 $dbConfig['username'],
                 $dbConfig['password'],
                 $dbConfig['options']
             );
-            
+
             // Configurar timezone y encoding
             $this->connection->exec("SET timezone = 'America/Mexico_City'");
             $this->connection->exec("SET client_encoding = 'UTF8'");
-            
+
             // Habilitar extensiones si no están activas
             $this->enableExtensions();
-            
+
             $this->logger->info('Conexión a PostgreSQL establecida exitosamente');
-            
         } catch (PDOException $e) {
             $this->logger->error('Error conectando a PostgreSQL: ' . $e->getMessage());
             throw new Exception('Error de conexión a base de datos: ' . $e->getMessage());
         }
     }
-    
+
     /**
      * Habilita las extensiones necesarias de PostgreSQL
      */
     private function enableExtensions(): void
     {
+        if ($this->connection === null) {
+            $this->connect();
+            if ($this->connection === null) { // Still null after trying to connect
+                $this->logger->error("No hay conexión a BDD para habilitar extensiones.");
+                throw new Exception("No hay conexión a BDD para habilitar extensiones.");
+            }
+        }
+
         $extensions = [
             'uuid-ossp',
             'fuzzystrmatch',  // Para Levenshtein
             'pg_trgm'         // Para búsquedas de texto optimizadas
         ];
-        
+
         foreach ($extensions as $extension) {
             try {
                 $this->connection->exec("CREATE EXTENSION IF NOT EXISTS \"{$extension}\"");
@@ -130,34 +140,42 @@ class Database
             }
         }
     }
-    
+
     /**
      * Obtiene la conexión PDO
+     * @throws Exception Si la conexión no se puede establecer
      */
     public function getConnection(): PDO
     {
         if ($this->connection === null) {
             $this->connect();
+            if ($this->connection === null) { // Check again after trying to connect
+                 $this->logger->error("No se pudo establecer la conexión a la base de datos.");
+                 throw new Exception("No se pudo establecer la conexión a la base de datos.");
+            }
         }
         return $this->connection;
     }
-    
+
     /**
-     * Ejecuta una consulta preparada con logging y cache
+     * Ejecuta una consulta preparada con logging
+     * @param string $sql
+     * @param array<int|string, mixed> $params
+     * @return \PDOStatement
+     * @throws Exception
      */
     public function query(string $sql, array $params = []): \PDOStatement
     {
         $startTime = microtime(true);
-        $cacheKey = md5($sql . serialize($params));
-        
+
         try {
-            $stmt = $this->connection->prepare($sql);
+            $stmt = $this->getConnection()->prepare($sql);
             $stmt->execute($params);
-            
+
             $executionTime = (microtime(true) - $startTime) * 1000; // en milisegundos
             $this->queryCount++;
             $this->totalQueryTime += $executionTime;
-            
+
             // Log de queries lentas
             if ($executionTime > ($this->config['logging']['slow_query_threshold'] ?? 1000)) {
                 $this->logger->warning("Query lenta detectada", [
@@ -166,7 +184,7 @@ class Database
                     'execution_time_ms' => $executionTime
                 ]);
             }
-            
+
             // Log debug si está habilitado
             if ($this->config['logging']['enabled'] ?? false) {
                 $this->logger->debug("Query ejecutada", [
@@ -175,9 +193,8 @@ class Database
                     'execution_time_ms' => $executionTime
                 ]);
             }
-            
+
             return $stmt;
-            
         } catch (PDOException $e) {
             $this->logger->error('Error ejecutando query', [
                 'sql' => $sql,
@@ -187,23 +204,27 @@ class Database
             throw new Exception('Error en consulta SQL: ' . $e->getMessage());
         }
     }
-    
+
     /**
      * Busca registros por similitud usando Levenshtein
+     * @return array<int, array<string, mixed>>
      */
     public function searchBySimilarity(
-        string $searchName, 
-        string $searchId = null, 
-        float $minSimilarity = 70.0, 
+        string $searchName,
+        string $searchId = null,
+        float $minSimilarity = 70.0,
         int $limit = 50
     ): array {
         $sql = "SELECT * FROM search_local_similarity($1, $2, $3, $4)";
+        /** @var array<int, mixed> $params */
         $params = [$searchName, $searchId, $minSimilarity, $limit];
-        
+
         $stmt = $this->query($sql, $params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        /** @var array<int, array<string, mixed>> $results */
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $results;
     }
-    
+
     /**
      * Calcula similitud entre dos textos
      */
@@ -212,42 +233,47 @@ class Database
         $sql = "SELECT calculate_similarity($1, $2) as similarity";
         $stmt = $this->query($sql, [$text1, $text2]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return (float)($result['similarity'] ?? 0.0);
     }
-    
+
     /**
      * Inserta registros en lote de manera eficiente
+     * @param string $table
+     * @param string[] $columns
+     * @param array<int, array<int, mixed>> $data
+     * @return bool
+     * @throws Exception
      */
     public function bulkInsert(string $table, array $columns, array $data): bool
     {
         if (empty($data)) {
             return true;
         }
-        
-        $this->connection->beginTransaction();
-        
+
+        $connection = $this->getConnection();
+        $connection->beginTransaction();
+
         try {
             $placeholders = '(' . str_repeat('?,', count($columns) - 1) . '?)';
             $sql = "INSERT INTO {$table} (" . implode(',', $columns) . ") VALUES {$placeholders}";
-            
-            $stmt = $this->connection->prepare($sql);
-            
+
+            $stmt = $connection->prepare($sql);
+
             foreach ($data as $row) {
                 $stmt->execute($row);
             }
-            
-            $this->connection->commit();
-            
+
+            $connection->commit();
+
             $this->logger->info("Bulk insert exitoso", [
                 'table' => $table,
                 'rows_inserted' => count($data)
             ]);
-            
+
             return true;
-            
         } catch (PDOException $e) {
-            $this->connection->rollBack();
+            $connection->rollBack();
             $this->logger->error("Error en bulk insert", [
                 'table' => $table,
                 'error' => $e->getMessage()
@@ -255,9 +281,12 @@ class Database
             throw new Exception('Error en inserción masiva: ' . $e->getMessage());
         }
     }
-    
+
     /**
      * Inserta un lote de búsqueda
+     * @param array<string, mixed> $batchData
+     * @return string
+     * @throws Exception
      */
     public function createSearchBatch(array $batchData): string
     {
@@ -265,7 +294,7 @@ class Database
             batch_name, original_filename, total_records, 
             search_config, status, created_by
         ) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
-        
+
         $stmt = $this->query($sql, [
             $batchData['batch_name'],
             $batchData['original_filename'] ?? null,
@@ -274,19 +303,25 @@ class Database
             'created',
             $batchData['created_by'] ?? 'system'
         ]);
-        
+
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['id'];
     }
-    
+
     /**
      * Inserta registros de búsqueda masiva
+     * @param string $batchId
+     * @param array<int, array<string, mixed>> $searches
+     * @return bool
+     * @throws Exception
      */
     public function insertBulkSearches(string $batchId, array $searches): bool
     {
+        /** @var string[] $columns */
         $columns = ['batch_id', 'identification', 'full_name', 'original_row_data'];
+        /** @var array<int, array<int, mixed>> $data */
         $data = [];
-        
+
         foreach ($searches as $search) {
             $data[] = [
                 $batchId,
@@ -295,10 +330,10 @@ class Database
                 json_encode($search['original_row_data'] ?? [])
             ];
         }
-        
+
         return $this->bulkInsert('bulk_searches', $columns, $data);
     }
-    
+
     /**
      * Actualiza el estado de una búsqueda
      */
@@ -309,23 +344,29 @@ class Database
                 processed_at = CURRENT_TIMESTAMP,
                 error_message = ?
                 WHERE id = ?";
-        
+
         $stmt = $this->query($sql, [$status, $errorMessage, $searchId]);
         return $stmt->rowCount() > 0;
     }
-    
+
     /**
      * Guarda resultados de búsqueda local
+     * @param string $bulkSearchId
+     * @param array<int, array<string, mixed>> $results
+     * @return bool
+     * @throws Exception
      */
     public function saveLocalResults(string $bulkSearchId, array $results): bool
     {
         if (empty($results)) {
             return true;
         }
-        
+
+        /** @var string[] $columns */
         $columns = ['bulk_search_id', 'local_record_id', 'similarity_percentage', 'match_type', 'similarity_details'];
+        /** @var array<int, array<int, mixed>> $data */
         $data = [];
-        
+
         foreach ($results as $result) {
             $data[] = [
                 $bulkSearchId,
@@ -335,26 +376,32 @@ class Database
                 json_encode($result['similarity_details'] ?? [])
             ];
         }
-        
+
         return $this->bulkInsert('search_results', $columns, $data);
     }
-    
+
     /**
      * Guarda resultados de búsqueda externa
+     * @param string $bulkSearchId
+     * @param array<int, array<string, mixed>> $results
+     * @return bool
+     * @throws Exception
      */
     public function saveExternalResults(string $bulkSearchId, array $results): bool
     {
         if (empty($results)) {
             return true;
         }
-        
+
+        /** @var string[] $columns */
         $columns = [
             'bulk_search_id', 'site_name', 'site_category', 'search_query',
             'has_results', 'results_count', 'results_data', 'similarity_score',
             'scraper_status', 'direct_link', 'execution_time', 'error_details'
         ];
+        /** @var array<int, array<int, mixed>> $data */
         $data = [];
-        
+
         foreach ($results as $result) {
             $data[] = [
                 $bulkSearchId,
@@ -371,41 +418,51 @@ class Database
                 $result['error_details'] ?? null
             ];
         }
-        
+
         return $this->bulkInsert('external_results', $columns, $data);
     }
-    
+
     /**
      * Obtiene el progreso de un lote
+     * @param string $batchId
+     * @return array<string, mixed>
+     * @throws Exception
      */
     public function getBatchProgress(string $batchId): array
     {
         $sql = "SELECT * FROM v_batch_summary WHERE id = ?";
         $stmt = $this->query($sql, [$batchId]);
+        /** @var array<string, mixed>|false $result */
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return $result ?: [];
     }
-    
+
     /**
      * Obtiene resumen de resultados de búsqueda
+     * @param string|null $batchId
+     * @return array<int, array<string, mixed>>
+     * @throws Exception
      */
     public function getSearchResultsSummary(string $batchId = null): array
     {
         if ($batchId) {
             $sql = "SELECT * FROM v_search_results_summary WHERE batch_id = ? ORDER BY created_at DESC";
+            /** @var array<int, string> $params */
             $params = [$batchId];
         } else {
             $sql = "SELECT * FROM v_search_results_summary ORDER BY created_at DESC LIMIT 100";
             $params = [];
         }
-        
+
         $stmt = $this->query($sql, $params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     /**
      * Obtiene estadísticas de rendimiento de sitios
+     * @return array<int, array<string, mixed>>
+     * @throws Exception
      */
     public function getSitePerformance(): array
     {
@@ -413,9 +470,12 @@ class Database
         $stmt = $this->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     /**
      * Crea una notificación
+     * @param array<string, mixed> $notification
+     * @return string
+     * @throws Exception
      */
     public function createNotification(array $notification): string
     {
@@ -423,7 +483,7 @@ class Database
             type, title, message, progress_current, progress_total,
             batch_id, is_persistent, auto_dismiss_seconds
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
-        
+
         $stmt = $this->query($sql, [
             $notification['type'],
             $notification['title'],
@@ -434,13 +494,15 @@ class Database
             $notification['is_persistent'] ?? false,
             $notification['auto_dismiss_seconds'] ?? 5
         ]);
-        
+
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['id'];
     }
-    
+
     /**
      * Obtiene notificaciones no leídas
+     * @return array<int, array<string, mixed>>
+     * @throws Exception
      */
     public function getUnreadNotifications(): array
     {
@@ -448,30 +510,37 @@ class Database
         $stmt = $this->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     /**
      * Marca notificaciones como leídas
+     * @param string[] $notificationIds
+     * @return bool
+     * @throws Exception
      */
     public function markNotificationsAsRead(array $notificationIds): bool
     {
         if (empty($notificationIds)) {
             return true;
         }
-        
+
         $placeholders = str_repeat('?,', count($notificationIds) - 1) . '?';
         $sql = "UPDATE notifications SET is_read = true, read_at = CURRENT_TIMESTAMP WHERE id IN ({$placeholders})";
-        
+
         $stmt = $this->query($sql, $notificationIds);
         return $stmt->rowCount() > 0;
     }
-    
+
     /**
      * Registra un log del sistema
+     * @param string $level
+     * @param string $component
+     * @param string $message
+     * @param array<string, mixed> $context
      */
     public function log(string $level, string $component, string $message, array $context = []): void
     {
         $sql = "INSERT INTO system_logs (log_level, component, message, context_data) VALUES (?, ?, ?, ?)";
-        
+
         try {
             $this->query($sql, [
                 strtoupper($level),
@@ -484,51 +553,65 @@ class Database
             error_log("Error guardando log en BD: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Obtiene estadísticas del sistema
+     * @return array<string, mixed>
+     * @throws Exception
      */
     public function getSystemStats(): array
     {
+        /** @var array<string, mixed> $stats */
         $stats = [];
-        
+
         // Estadísticas de tablas principales
+        /** @var string[] $tables */
         $tables = ['bulk_searches', 'search_batches', 'local_database_records', 'external_results'];
         foreach ($tables as $table) {
             $sql = "SELECT COUNT(*) as count FROM {$table}";
             $stmt = $this->query($sql);
+            /** @var array{count: string}|false $result */
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $stats['tables'][$table] = (int)$result['count'];
+            $stats['tables'][$table] = (int)($result['count'] ?? 0);
         }
-        
+
         // Estadísticas de consultas en esta sesión
         $stats['queries'] = [
             'total_queries' => $this->queryCount,
             'total_time_ms' => round($this->totalQueryTime, 2),
-            'avg_time_ms' => $this->queryCount > 0 ? round($this->totalQueryTime / $this->queryCount, 2) : 0
+            'avg_time_ms' => $this->queryCount > 0 ? round($this->totalQueryTime / $this->queryCount, 2) : 0.0
         ];
-        
+
         return $stats;
     }
-    
+
     /**
      * Verifica la salud de la conexión
+     * @return array<string, mixed>
      */
     public function healthCheck(): array
     {
         try {
             $startTime = microtime(true);
             $stmt = $this->query("SELECT 1 as health_check, version() as version");
+            /** @var array{health_check: int, version: string}|false $result */
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             $responseTime = (microtime(true) - $startTime) * 1000;
-            
+
+            if ($result === false) {
+                return [
+                    'status' => 'unhealthy',
+                    'error' => 'Failed to fetch health check data.',
+                    'connection_active' => false
+                ];
+            }
+
             return [
                 'status' => 'healthy',
                 'response_time_ms' => round($responseTime, 2),
                 'version' => $result['version'],
                 'connection_active' => true
             ];
-            
         } catch (Exception $e) {
             return [
                 'status' => 'unhealthy',
@@ -537,7 +620,7 @@ class Database
             ];
         }
     }
-    
+
     /**
      * Cierra la conexión
      */
@@ -546,5 +629,4 @@ class Database
         $this->connection = null;
         $this->logger->info('Conexión a PostgreSQL cerrada');
     }
-    
-    /**
+}
