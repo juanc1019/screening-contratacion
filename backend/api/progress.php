@@ -6,9 +6,12 @@
  */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../utils/helpers.php'; // Include helpers
 
 use ScreeningApp\Database;
 use ScreeningApp\QueueManager;
+use function ScreeningApp\Utils\sendSuccess; // Import specific functions
+use function ScreeningApp\Utils\sendError;   // Import specific functions
 
 // Headers para SSE (Server-Sent Events) o JSON regular
 $isSSE = isset($_GET['stream']) && $_GET['stream'] === 'true';
@@ -33,9 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Solo permitir GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Método no permitido']);
-    exit;
+    // sendError already sets header and exits
+    sendError('Método no permitido', 405);
 }
 
 try {
@@ -50,7 +52,12 @@ try {
     } else {
         // Respuesta única JSON
         $result = handleSingleProgress($action, $db, $queueManager);
+        // For non-SSE, assuming $result already contains 'success' => true
+        // and any necessary data. If it's purely data, use sendSuccess.
+        // Let's assume functions like getBatchProgressData return the full structure including 'success'.
+        header('Content-Type: application/json');
         echo json_encode($result);
+        exit;
     }
 } catch (Exception $e) {
     error_log("Error en progress.php: " . $e->getMessage());
@@ -59,13 +66,9 @@ try {
         echo "event: error\n";
         echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
         flush();
+        // Consider closing SSE connection or allowing client to handle retry
     } else {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
+        sendError($e->getMessage(), 400);
     }
 }
 

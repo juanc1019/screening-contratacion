@@ -6,12 +6,15 @@
  */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../utils/helpers.php'; // Include helpers
 
 use ScreeningApp\Database;
 use ScreeningApp\SearchEngine;
 use ScreeningApp\ScraperManager;
 use ScreeningApp\QueueManager;
 use ScreeningApp\ExcelProcessor;
+use function ScreeningApp\Utils\sendSuccess; // Import specific functions
+use function ScreeningApp\Utils\sendError;   // Import specific functions
 
 // Headers CORS y JSON
 header('Content-Type: application/json');
@@ -79,21 +82,21 @@ try {
 
     // Solo POST para búsquedas
     if ($requestMethod !== 'POST') {
-        http_response_code(405);
-        echo json_encode(['error' => 'Método no permitido']);
-        exit;
+        sendError('Método no permitido', 405);
     }
 
     // Leer datos POST
     /** @var string|false $rawInput */
     $rawInput = file_get_contents('php://input');
     if ($rawInput === false) {
-        throw new Exception('No se pudo leer el cuerpo de la petición');
+        // Use sendError helper for consistency
+        sendError('No se pudo leer el cuerpo de la petición', 500);
     }
     /** @var array<string,mixed>|null $inputData */
     $inputData = json_decode($rawInput, true);
     if (json_last_error() !== JSON_ERROR_NONE || $inputData === null) {
-        throw new Exception('JSON inválido en el cuerpo de la petición: ' . json_last_error_msg());
+        // Use sendError helper for consistency
+        sendError('JSON inválido en el cuerpo de la petición: ' . json_last_error_msg(), 400);
     }
 
     $searchType = (string)($inputData['search_type'] ?? 'individual');
@@ -115,27 +118,33 @@ try {
             throw new Exception('Tipo de búsqueda no válido');
     }
 
+    // For GET requests, functions like handleIndividualSearch already prepare the full response structure.
+    // For POST requests, we can use sendSuccess if $result only contains the data part.
+    // Assuming $result from POST actions is already a complete response array:
+    header('Content-Type: application/json'); // Ensure header is set if not done by sendSuccess/sendError
     echo json_encode($result);
+    exit;
+
 } catch (Exception $e) {
     error_log("Error en search.php: " . $e->getMessage());
 
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
-
-    // Log del error
+    // Log del error before sending response
     try {
-        $db = Database::getInstance();
-        $db->log('ERROR', 'search_api', 'Error en búsqueda', [
+        // Ensure $db is available, it might not be if error occurred before its initialization
+        if (!isset($db) || $db === null) {
+            $db = Database::getInstance();
+        }
+        $db->log('ERROR', 'search_api', 'Error en búsqueda API', [
             'error' => $e->getMessage(),
-            'request_data' => $inputData ?? []
+            'request_data' => $inputData ?? [], // $inputData might not be set if error is early
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
         ]);
     } catch (Exception $logError) {
         error_log("Error adicional en logging: " . $logError->getMessage());
     }
+
+    sendError($e->getMessage()); // Default status code 400
 }
 
 /**

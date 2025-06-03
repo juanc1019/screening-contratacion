@@ -6,10 +6,13 @@
  */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../utils/helpers.php'; // Include helpers
 
 use ScreeningApp\Database;
 use ScreeningApp\ExcelProcessor;
 use ScreeningApp\QueueManager;
+use function ScreeningApp\Utils\sendSuccess; // Import specific functions
+use function ScreeningApp\Utils\sendError;   // Import specific functions
 
 // Headers CORS y JSON
 header('Content-Type: application/json');
@@ -24,9 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Solo permitir POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Método no permitido']);
-    exit;
+    sendError('Método no permitido', 405);
 }
 
 try {
@@ -35,7 +36,7 @@ try {
 
     // Validar que se subió un archivo
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('No se subió ningún archivo o hubo un error en la subida');
+        sendError('No se subió ningún archivo o hubo un error en la subida', 400);
     }
 
     $file = $_FILES['file'];
@@ -47,7 +48,7 @@ try {
     $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
     if (!in_array($fileExtension, $allowedExtensions)) {
-        throw new Exception('Tipo de archivo no permitido. Permitidos: ' . implode(', ', $allowedExtensions));
+        sendError('Tipo de archivo no permitido. Permitidos: ' . implode(', ', $allowedExtensions), 415);
     }
 
     // Validar tamaño
@@ -55,20 +56,20 @@ try {
     $fileSizeMB = $file['size'] / (1024 * 1024);
 
     if ($fileSizeMB > $maxSizeMB) {
-        throw new Exception("El archivo excede el tamaño máximo permitido de {$maxSizeMB}MB");
+        sendError("El archivo excede el tamaño máximo permitido de {$maxSizeMB}MB", 413);
     }
 
     // Determinar directorio de destino
     $uploadDir = match ($uploadType) {
         'local_database' => $config['files']['local_db_dir'],
         'search' => $config['files']['search_files_dir'],
-        default => throw new Exception('Tipo de subida no válido')
+        default => sendError('Tipo de subida no válido', 400)
     };
 
     // Crear directorio si no existe
     if (!is_dir($uploadDir)) {
         if (!mkdir($uploadDir, 0755, true)) {
-            throw new Exception('No se pudo crear el directorio de subida');
+            sendError('No se pudo crear el directorio de subida', 500);
         }
     }
 
@@ -78,7 +79,7 @@ try {
 
     // Mover archivo subido
     if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-        throw new Exception('Error moviendo el archivo subido');
+        sendError('Error moviendo el archivo subido', 500);
     }
 
     // Procesar archivo según el tipo
@@ -163,7 +164,7 @@ try {
                 'valid_records' => $validationResult['statistics']['valid_rows'] ?? 0
             ]);
         } else {
-            throw new Exception('Error validando archivo: ' . $validationResult['message']);
+            sendError('Error validando archivo: ' . ($validationResult['message'] ?? 'Error desconocido'));
         }
     }
 
@@ -175,7 +176,14 @@ try {
         'is_persistent' => false
     ]);
 
+    // Enviar respuesta de éxito final
+    // sendSuccess($response) no funcionaría directamente aquí porque $response ya tiene 'success' => true
+    // y sendSuccess lo añadiría de nuevo.
+    header('Content-Type: application/json');
+    http_response_code(200); // O 201 si se creó un recurso y se devuelve su URI/info
     echo json_encode($response);
+    exit;
+
 } catch (Exception $e) {
     error_log("Error en upload.php: " . $e->getMessage());
 
@@ -184,16 +192,11 @@ try {
         unlink($filePath);
     }
 
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
-
-    // Log del error
+    // Log del error antes de enviar la respuesta
     try {
-        $db = Database::getInstance();
+        if (!isset($db) || $db === null) { // Asegurar que $db está disponible
+            $db = Database::getInstance();
+        }
         $db->log('ERROR', 'upload_api', 'Error subiendo archivo', [
             'error' => $e->getMessage(),
             'file_name' => $_FILES['file']['name'] ?? 'unknown'
@@ -201,4 +204,6 @@ try {
     } catch (Exception $logError) {
         error_log("Error adicional en logging: " . $logError->getMessage());
     }
+
+    sendError($e->getMessage());
 }
