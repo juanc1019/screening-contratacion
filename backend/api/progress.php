@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Solo permitir GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     // sendError already sets header and exits
-    sendError('Método no permitido', 405);
+    sendError('Método no permitido', 405); 
 }
 
 try {

@@ -204,6 +204,6 @@ try {
     } catch (Exception $logError) {
         error_log("Error adicional en logging: " . $logError->getMessage());
     }
-
+    
     sendError($e->getMessage());
 }
